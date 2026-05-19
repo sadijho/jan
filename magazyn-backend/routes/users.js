@@ -13,10 +13,7 @@ router.post('/register', validate(registerSchema), userController.register);
 router.post('/login', validate(loginSchema), userController.login);
 
 // Profil użytkownika
-router.get('/profile', verifyToken, (req, res) => {
-  console.log('Token użytkownika w /profile:', req.user);
-  res.status(200).json({ user: req.user });
-});
+router.get('/profile', verifyToken, userController.getProfile);
 
 // Lista użytkowników (z paginacją)
 router.get('/', verifyToken, verifyRole(['admin']), userController.getUsersWithPagination);
