@@ -1,0 +1,14 @@
+{
+    "Nazwa użytkownika, hasło i rola są wymagane": "Nazwa użytkownika, hasło i rola są wymagane.",
+    "Nieprawidłowy format adresu email": "Nieprawidłowy format adresu email.",
+    "Rola nie została znaleziona": "Rola nie została znaleziona.",
+    "Błąd podczas hashowania hasła": "Błąd podczas hashowania hasła.",
+    "Nazwa użytkownika lub email już istnieje": "Nazwa użytkownika lub email już istnieje.",
+    "Błąd podczas tworzenia użytkownika": "Błąd podczas tworzenia użytkownika.",
+    "Użytkownik został zarejestrowany": "Użytkownik został zarejestrowany.",
+    "Nieprawidłowy login lub hasło": "Nieprawidłowy login lub hasło.",
+    "Nieprawidłowe hasło": "Nieprawidłowe hasło.",
+    "Błąd podczas pobierania roli użytkownika": "Błąd podczas pobierania roli użytkownika.",
+    "Zalogowano pomyślnie": "Zalogowano pomyślnie."
+  }
+  

@@ -1,0 +1,14 @@
+{
+    "Nazwa użytkownika, hasło i rola są wymagane": "Username, password, and role are required.",
+    "Nieprawidłowy format adresu email": "Invalid email format.",
+    "Rola nie została znaleziona": "Role not found.",
+    "Błąd podczas hashowania hasła": "Error hashing password.",
+    "Nazwa użytkownika lub email już istnieje": "Username or email already exists.",
+    "Błąd podczas tworzenia użytkownika": "Error creating user.",
+    "Użytkownik został zarejestrowany": "User registered successfully.",
+    "Nieprawidłowy login lub hasło": "Invalid login or password.",
+    "Nieprawidłowe hasło": "Invalid password.",
+    "Błąd podczas pobierania roli użytkownika": "Error fetching user role.",
+    "Zalogowano pomyślnie": "Logged in successfully."
+  }
+  
