@@ -2,80 +2,142 @@ const Product = require('../models/product');
 const Order = require('../models/order');
 const OrderProducts = require('../models/orderProducts');
 const OrderHistory = require('../models/orderHistory');
+const db = require('../config/db');
 
 // Tworzenie zamówienia z wieloma produktami
 
 
-exports.createOrder = async (req, res) => {
-  const { products, dueDate } = req.body; // Lista produktów [{ productId, quantity }]
+exports.createOrder = (req, res) => {
+  const { products, dueDate } = req.body;
   const userId = req.user.id;
 
-  console.log('Żądanie do tworzenia zamówienia:', { products, dueDate, userId });
-
-  try {
-    // Tworzenie zamówienia
-    const orderResult = await new Promise((resolve, reject) => {
-      Order.create({ userId, dueDate }, (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
-      });
-    });
-
-    const orderId = orderResult.insertId;
-
-    // Przetwarzanie produktów zamówienia
-    await Promise.all(
-      products.map(async (product) => {
-        const productResult = await new Promise((resolve, reject) => {
-          Product.findById(product.productId, (err, results) => {
-            if (err || results.length === 0) reject(new Error(`Produkt ID ${product.productId} nie został znaleziony`));
-            else resolve(results[0]);
-          });
-        });
-
-        if (productResult.quantity < product.quantity) {
-          throw new Error(`Brak wystarczającej ilości produktu: ${productResult.name}`);
-        }
-
-        // Aktualizacja stanu magazynowego produktu
-        await new Promise((resolve, reject) => {
-          const updatedProduct = {
-            name: productResult.name,
-            description: productResult.description,
-            quantity: productResult.quantity - product.quantity,
-            status: productResult.status,
-            locationId: productResult.location_id, 
-          };
-        
-          Product.update(product.productId, updatedProduct, (err) => {
-            if (err) {
-              console.error('Błąd podczas aktualizacji produktu:', err);
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-        
-
-        // Dodawanie produktu do zamówienia
-        await new Promise((resolve, reject) => {
-          OrderProducts.create(
-            { orderId, productId: product.productId, quantity: product.quantity },
-            (err) => {
-              if (err) reject(err);
-              else resolve();
-            }
-          );
-        });
-      })
-    );
-
-    res.status(201).json({ message: 'Zamówienie zostało złożone i produkty zostały dodane' });
-  } catch (err) {
-    console.error('Błąd podczas tworzenia zamówienia:', err.message);
-    res.status(500).json({ message: err.message || 'Błąd serwera podczas tworzenia zamówienia' });
+  if (!products || !Array.isArray(products) || products.length === 0) {
+    return res.status(400).json({ message: 'Lista produktów jest wymagana' });
   }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('Błąd pobierania połączenia z bazy:', err);
+      return res.status(500).json({ message: 'Błąd serwera' });
+    }
+
+    connection.beginTransaction((err) => {
+      if (err) {
+        connection.release();
+        console.error('Błąd rozpoczęcia transakcji:', err);
+        return res.status(500).json({ message: 'Błąd serwera' });
+      }
+
+      connection.query(
+        'INSERT INTO Orders (user_id, status, due_date) VALUES (?, ?, ?)',
+        [userId, 'w trakcie', dueDate],
+        (err, orderResult) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('Błąd tworzenia zamówienia:', err);
+              res.status(500).json({ message: 'Błąd podczas tworzenia zamówienia' });
+            });
+          }
+
+          const orderId = orderResult.insertId;
+          let index = 0;
+
+          const processNextProduct = () => {
+            if (index >= products.length) {
+              return connection.commit((err) => {
+                if (err) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    console.error('Błąd zatwierdzania transakcji:', err);
+                    res.status(500).json({ message: 'Błąd podczas zatwierdzania zamówienia' });
+                  });
+                }
+
+                connection.release();
+                return res.status(201).json({
+                  message: 'Zamówienie zostało złożone i produkty zostały dodane',
+                  orderId,
+                });
+              });
+            }
+
+            const product = products[index];
+
+            connection.query(
+              'SELECT * FROM Products WHERE id = ? FOR UPDATE',
+              [product.productId],
+              (err, productResults) => {
+                if (err) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    console.error('Błąd pobierania produktu:', err);
+                    res.status(500).json({ message: 'Błąd podczas pobierania produktu' });
+                  });
+                }
+
+                if (productResults.length === 0) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    res.status(404).json({
+                      message: `Produkt ID ${product.productId} nie został znaleziony`,
+                    });
+                  });
+                }
+
+                const productFromDb = productResults[0];
+                const orderedQuantity = parseInt(product.quantity, 10);
+
+                if (productFromDb.quantity < orderedQuantity) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    res.status(400).json({
+                      message: `Brak wystarczającej ilości produktu: ${productFromDb.name}`,
+                    });
+                  });
+                }
+
+                connection.query(
+                  'UPDATE Products SET quantity = ? WHERE id = ?',
+                  [productFromDb.quantity - orderedQuantity, product.productId],
+                  (err) => {
+                    if (err) {
+                      return connection.rollback(() => {
+                        connection.release();
+                        console.error('Błąd aktualizacji produktu:', err);
+                        res.status(500).json({ message: 'Błąd podczas aktualizacji produktu' });
+                      });
+                    }
+
+                    connection.query(
+                      'INSERT INTO OrderProducts (order_id, product_id, quantity) VALUES (?, ?, ?)',
+                      [orderId, product.productId, orderedQuantity],
+                      (err) => {
+                        if (err) {
+                          return connection.rollback(() => {
+                            connection.release();
+                            console.error('Błąd dodawania produktu do zamówienia:', err);
+                            res.status(500).json({
+                              message: 'Błąd podczas dodawania produktu do zamówienia',
+                            });
+                          });
+                        }
+
+                        index++;
+                        processNextProduct();
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          };
+
+          processNextProduct();
+        }
+      );
+    });
+  });
 };
 
 // Pobieranie zamówień
