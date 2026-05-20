@@ -5,15 +5,12 @@ exports.getAllOrderProducts = (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
 
-  console.log('Page:', page, 'Limit:', limit, 'Offset:', offset);
-
   OrderProducts.findAll(limit, offset, (err, results, totalCount) => {
     if (err) {
       console.error('Błąd podczas pobierania produktów zamówień:', err);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
-    console.log('Results:', results);
-    console.log('Total Count:', totalCount);
+
     const totalPages = Math.ceil(totalCount / limit);
     res.status(200).json({ results, totalPages, currentPage: page });
   });
@@ -27,12 +24,22 @@ exports.getOrderProductsByOrderId = (req, res) => {
       console.error('Błąd podczas pobierania produktów zamówienia:', err);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
+
     res.status(200).json(results);
   });
 };
 
 exports.getOrderProductsByUserId = (req, res) => {
   const { userId } = req.params;
+  const loggedUserId = req.user.id;
+  const userRole = req.user.role;
+
+  if (userRole === 'worker' && parseInt(userId, 10) !== loggedUserId) {
+    return res.status(403).json({
+      message: 'Nie masz uprawnień do przeglądania tych zamówień',
+    });
+  }
+
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
@@ -45,18 +52,5 @@ exports.getOrderProductsByUserId = (req, res) => {
 
     const totalPages = Math.ceil(totalCount / limit);
     res.status(200).json({ results, totalPages, currentPage: page });
-  });
-};
-
-
-exports.createOrderProduct = (req, res) => {
-  const { orderId, productId, quantity } = req.body;
-
-  OrderProducts.create({ orderId, productId, quantity }, (err) => {
-    if (err) {
-      console.error('Błąd podczas dodawania produktu do zamówienia:', err);
-      return res.status(500).json({ message: 'Błąd serwera' });
-    }
-    res.status(201).json({ message: 'Produkt został dodany do zamówienia' });
   });
 };
