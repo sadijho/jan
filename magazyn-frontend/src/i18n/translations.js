@@ -82,6 +82,15 @@ userDeleteError: 'Nie udało się usunąć użytkownika.',
 noRole: 'Brak roli',
 warehouseLocations: 'Lokalizacje magazynowe',
 code: 'Kod',
+
+aboutUs: 'O NAS',
+login: 'Logowanie',
+loginButton: 'Zaloguj się',
+usernameLabel: 'Nazwa użytkownika:',
+passwordLabel: 'Hasło:',
+invalidCredentials: 'Nieprawidłowy login lub hasło.',
+aboutDescription: 'Nasza aplikacja do zarządzania magazynem to nowoczesne rozwiązanie wspomagające organizację i kontrolę procesów magazynowych. Zapewniamy prostotę obsługi, szybkość działania oraz przejrzystość informacji, aby pomóc w efektywnym zarządzaniu Twoimi zasobami.',
+backToHome: 'Powrót na stronę główną',
     },
 
     roles: {
@@ -186,6 +195,15 @@ userDeleteError: 'Failed to delete user.',
 noRole: 'No role',
 warehouseLocations: 'Warehouse Locations',
 code: 'Code',
+
+aboutUs: 'ABOUT US',
+login: 'Login',
+loginButton: 'Log in',
+usernameLabel: 'Username:',
+passwordLabel: 'Password:',
+invalidCredentials: 'Invalid username or password.',
+aboutDescription: 'Our warehouse management application is a modern solution designed to support the organization and control of warehouse processes. We ensure ease of use, speed, and transparency to help you efficiently manage your resources.',
+backToHome: 'Back to Home',
     },
 
     roles: {

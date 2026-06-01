@@ -2,6 +2,22 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
+const getDashboardPathByRole = (role) => {
+  if (role === 'admin') return '/dashboard';
+  if (role === 'managing director') return '/dashboard-md';
+  if (role === 'worker') return '/dashboard-worker';
+
+  return '/';
+};
+
+const isTokenExpired = (decodedToken) => {
+  if (!decodedToken?.exp) {
+    return true;
+  }
+
+  return decodedToken.exp * 1000 < Date.now();
+};
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem('token');
 
@@ -11,14 +27,21 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   try {
     const decodedToken = jwtDecode(token);
+
+    if (isTokenExpired(decodedToken)) {
+      localStorage.removeItem('token');
+      return <Navigate to="/" replace />;
+    }
+
     const userRole = decodedToken.role;
 
     if (allowedRoles && !allowedRoles.includes(userRole)) {
-      if (userRole === 'admin') return <Navigate to="/dashboard" replace />;
-      if (userRole === 'managing director') return <Navigate to="/dashboard-md" replace />;
-      if (userRole === 'worker') return <Navigate to="/dashboard-worker" replace />;
-
-      return <Navigate to="/" replace />;
+      return (
+        <Navigate
+          to={getDashboardPathByRole(userRole)}
+          replace
+        />
+      );
     }
 
     return children;

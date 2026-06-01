@@ -2,14 +2,22 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Login from './Login';
 import '../styles/Home.css';
+import { translate } from '../i18n/translations';
 
 const Home = ({ language, toggleLanguage }) => {
   const [showLogin, setShowLogin] = useState(false);
+  const t = (key) => translate(language, key);
 
   return (
-    <div className="bg-cover bg-center h-screen flex flex-col relative" style={{ backgroundImage: `url('/assets/warehouse-background.png')` }}>
+    <div
+      className="bg-cover bg-center h-screen flex flex-col relative"
+      style={{ backgroundImage: `url('/assets/warehouse-background.png')` }}
+    >
       <nav className="flex justify-between items-center bg-white bg-opacity-50 backdrop-blur-md px-4 py-2 fixed top-0 w-full shadow-md">
-        <button onClick={() => setShowLogin(false)} className="flex items-center">
+        <button
+          onClick={() => setShowLogin(false)}
+          className="flex items-center"
+        >
           <img
             src="/assets/logo.png"
             alt="Magazyn Logo"
@@ -18,9 +26,13 @@ const Home = ({ language, toggleLanguage }) => {
         </button>
 
         <div className="flex items-center gap-3">
-          <Link to="/about" className="text-gray-800 hover:text-gray-600 transition font-semibold">
-            {language === 'pl' ? 'O NAS' : 'ABOUT US'}
+          <Link
+            to="/about"
+            className="text-gray-800 hover:text-gray-600 transition font-semibold"
+          >
+            {t('common.aboutUs')}
           </Link>
+
           <button
             onClick={toggleLanguage}
             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-lg"
@@ -30,7 +42,10 @@ const Home = ({ language, toggleLanguage }) => {
               alt="language"
               className="w-5 h-5"
             />
-            <span className="text-sm font-medium">{language === 'pl' ? 'EN' : 'PL'}</span>
+
+            <span className="text-sm font-medium">
+              {language === 'pl' ? 'EN' : 'PL'}
+            </span>
           </button>
         </div>
       </nav>
@@ -41,7 +56,7 @@ const Home = ({ language, toggleLanguage }) => {
             className="flex items-center gap-2 bg-white text-gray-800 px-6 py-3 rounded-lg shadow-md text-lg font-semibold transition-all hover:bg-gray-100"
             onClick={() => setShowLogin(true)}
           >
-            {language === 'pl' ? 'Zaloguj się' : 'Log in'}
+            {t('common.loginButton')}
           </button>
         )}
 
