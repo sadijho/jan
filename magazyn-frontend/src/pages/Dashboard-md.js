@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Navbar from '../components/Navbar';
 
 const DashboardMD = ({ language, toggleLanguage }) => {
   const [userData, setUserData] = useState(null);
@@ -40,6 +41,29 @@ const DashboardMD = ({ language, toggleLanguage }) => {
   };
 
   const t = translations[language];
+
+  const links = [
+  {
+    label: t.locations,
+    path: '/locations',
+    color: 'bg-blue-500',
+  },
+  {
+    label: t.products,
+    path: '/products',
+    color: 'bg-blue-500',
+  },
+  {
+    label: t.statuses,
+    path: '/orders',
+    color: 'bg-blue-500',
+  },
+  {
+    label: t.placeOrder,
+    path: '/place-order',
+    color: 'bg-green-500',
+  },
+];
 
   const fetchOrderProducts = useCallback(async () => {
     try {
@@ -98,70 +122,17 @@ const DashboardMD = ({ language, toggleLanguage }) => {
     }
   }, [fetchOrderProducts, userData]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
+
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Navbar */}
-      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
-        <div className="flex items-center gap-4">
-          <img
-            src="/assets/logo.png"
-            alt="Magazyn Logo"
-            className="w-10 h-10 cursor-pointer"
-            onClick={() => navigate('/dashboard-md')}
-          />
-          {userData && (
-            <div>
-              <h1 className="text-lg font-bold text-gray-800">
-                {userData.firstName} {userData.lastName}
-              </h1>
-              <p className="text-sm text-gray-600">{userData.role}</p>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            onClick={() => navigate('/locations')}
-          >
-            {t.locations}
-          </button>
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            onClick={() => navigate('/products')}
-          >
-            {t.products}
-          </button>
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            onClick={() => navigate('/orders')}
-          >
-            {t.statuses}
-          </button>
-          <button
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-            onClick={() => navigate('/place-order')}
-          >
-            {t.placeOrder}
-          </button>
-          <button
-            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            onClick={toggleLanguage}
-          >
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-          >
-            {t.logout}
-          </button>
-        </div>
-      </nav>
+      <Navbar
+  userData={userData}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  links={links}
+/>
 
       <main className="flex-1 p-6 bg-white shadow-md mt-20">
         <div className="flex justify-between items-center mb-4">

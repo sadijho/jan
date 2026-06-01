@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const PlaceOrder = ({ language, toggleLanguage }) => {
   const [products, setProducts] = useState([]);
@@ -88,11 +89,11 @@ const PlaceOrder = ({ language, toggleLanguage }) => {
         { products: selectedProducts, dueDate },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(language === 'pl' ? 'Zamówienie zostało złożone!' : 'Order placed successfully!');
+      toast.success(language === 'pl' ? 'Zamówienie zostało złożone!' : 'Order placed successfully!');
       navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker');
     } catch (err) {
       console.error('Błąd podczas składania zamówienia:', err);
-      alert(language === 'pl' ? 'Nie udało się złożyć zamówienia.' : 'Failed to place order.');
+      toast.error(language === 'pl' ? 'Nie udało się złożyć zamówienia.' : 'Failed to place order.');
     }
   };
 

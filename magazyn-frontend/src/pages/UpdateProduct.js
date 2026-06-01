@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const UpdateProduct = ({ language, toggleLanguage }) => {
   const { id } = useParams();
@@ -86,7 +87,7 @@ const UpdateProduct = ({ language, toggleLanguage }) => {
     e.preventDefault();
 
     if (!['wolne', 'zajęte'].includes(formData.status)) {
-      alert(t.statusError);
+      toast.error(t.statusError);
       return;
     }
 
@@ -95,11 +96,11 @@ const UpdateProduct = ({ language, toggleLanguage }) => {
       await axios.put(`/api/products/${id}`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(language === 'pl' ? 'Produkt zaktualizowany pomyślnie!' : 'Product updated successfully!');
+      toast.success(language === 'pl' ? 'Produkt zaktualizowany pomyślnie!' : 'Product updated successfully!');
       navigate('/products');
     } catch (err) {
       console.error('Error updating product:', err);
-      alert(language === 'pl' ? 'Nie udało się zaktualizować produktu.' : 'Failed to update product.');
+      toast.error(language === 'pl' ? 'Nie udało się zaktualizować produktu.' : 'Failed to update product.');
     }
   };
 

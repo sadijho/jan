@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const Products = ({ language, toggleLanguage }) => {
   const [products, setProducts] = useState([]);
@@ -68,11 +69,11 @@ const Products = ({ language, toggleLanguage }) => {
       await axios.delete(`/api/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(language === 'pl' ? 'Produkt został usunięty.' : 'Product deleted successfully.');
+      toast.success(language === 'pl' ? 'Produkt został usunięty.' : 'Product deleted successfully.');
       fetchProducts(currentPage);
     } catch (err) {
       console.error('Error deleting product:', err);
-      alert(language === 'pl' ? 'Nie udało się usunąć produktu.' : 'Failed to delete product.');
+      toast.error(language === 'pl' ? 'Nie udało się usunąć produktu.' : 'Failed to delete product.');
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const Orders = ({ language, toggleLanguage }) => {
   const [orders, setOrders] = useState([]);
@@ -99,11 +100,11 @@ const Orders = ({ language, toggleLanguage }) => {
         { status: 'zrealizowane' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(language === 'pl' ? 'Status zamówienia został zaktualizowany!' : 'Order status updated!');
+      toast.success(language === 'pl' ? 'Status zamówienia został zaktualizowany!' : 'Order status updated!');
       fetchOrders(currentPage); // Odśwież dane po aktualizacji statusu
     } catch (err) {
       console.error('Error updating order status:', err);
-      alert(language === 'pl' ? 'Nie udało się zaktualizować statusu zamówienia.' : 'Failed to update order status.');
+      toast.error(language === 'pl' ? 'Nie udało się zaktualizować statusu zamówienia.' : 'Failed to update order status.');
     }
   };
 

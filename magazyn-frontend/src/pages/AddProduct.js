@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const AddProduct = ({ language }) => {
   const [formData, setFormData] = useState({
@@ -64,7 +65,7 @@ const AddProduct = ({ language }) => {
     e.preventDefault();
 
     if (!['wolne', 'zajęte'].includes(formData.status)) {
-      alert(t.statusError);
+toast.error(t.statusError);
       return;
     }
 
@@ -73,12 +74,10 @@ const AddProduct = ({ language }) => {
       await axios.post('/api/products', formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(language === 'pl' ? 'Produkt dodany pomyślnie!' : 'Product added successfully!');
-      navigate('/products');
+toast.success(language === 'pl' ? 'Produkt dodany pomyślnie!' : 'Product added successfully!');      navigate('/products');
     } catch (err) {
       console.error('Error adding product:', err);
-      alert(language === 'pl' ? 'Nie udało się dodać produktu.' : 'Failed to add product.');
-    }
+toast.error(language === 'pl' ? 'Nie udało się dodać produktu.' : 'Failed to add product.');    }
   };
 
   return (

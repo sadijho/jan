@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const UserManagement = ({ language, toggleLanguage }) => {
   const [users, setUsers] = useState([]);
@@ -127,12 +128,12 @@ const UserManagement = ({ language, toggleLanguage }) => {
       await axios.put(`/api/users/${editingUser}`, updatedData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(language === 'pl' ? 'Zmiany zostały zapisane.' : 'Changes saved successfully.');
+      toast.success(language === 'pl' ? 'Zmiany zostały zapisane.' : 'Changes saved successfully.');
       setEditingUser(null);
       fetchUsers(currentPage);
     } catch (err) {
       console.error('Error saving user data:', err);
-      alert(language === 'pl' ? 'Nie udało się zapisać zmian.' : 'Failed to save changes.');
+      toast.error(language === 'pl' ? 'Nie udało się zapisać zmian.' : 'Failed to save changes.');
     }
   };
 
@@ -149,11 +150,11 @@ const UserManagement = ({ language, toggleLanguage }) => {
       await axios.delete(`/api/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(language === 'pl' ? 'Użytkownik został usunięty.' : 'User deleted successfully.');
+      toast.success(language === 'pl' ? 'Użytkownik został usunięty.' : 'User deleted successfully.');
       fetchUsers(currentPage);
     } catch (err) {
       console.error('Error deleting user:', err);
-      alert(language === 'pl' ? 'Nie udało się usunąć użytkownika.' : 'Failed to delete user.');
+      toast.error(language === 'pl' ? 'Nie udało się usunąć użytkownika.' : 'Failed to delete user.');
     }
   };
 

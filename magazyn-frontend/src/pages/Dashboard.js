@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Navbar from '../components/Navbar';
 
 const Dashboard = ({ language, toggleLanguage }) => {
   const [userData, setUserData] = useState(null);
@@ -29,6 +30,16 @@ const Dashboard = ({ language, toggleLanguage }) => {
   };
 
   const t = translations[language];
+
+  const links = userData?.role === 'admin'
+  ? [
+      {
+        label: t.users,
+        path: '/user-management',
+        color: 'bg-blue-500',
+      },
+    ]
+  : [];
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -78,49 +89,17 @@ const Dashboard = ({ language, toggleLanguage }) => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
+
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Navbar */}
-      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
-        <div className="flex items-center gap-4">
-          <img src="/assets/logo.png" alt="Magazyn Logo" className="w-10 h-10" />
-          {userData && (
-            <div>
-              <h1 className="text-lg font-bold text-gray-800">
-                {userData.firstName} {userData.lastName}
-              </h1>
-              <p className="text-sm text-gray-600">{userData.role}</p>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-4">
-          {userData?.role === 'admin' && (
-            <button
-              onClick={() => navigate('/user-management')}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
-              {t.users}
-            </button>
-          )}
-          <button
-            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            onClick={toggleLanguage}
-          >
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-          >
-            {t.logout}
-          </button>
-        </div>
-      </nav>
+<Navbar
+  userData={userData}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  links={links}
+/>
 
       <main className="flex-1 p-6 bg-white shadow-md mt-20">
         <h2 className="text-xl font-bold mb-4">{t.orders}</h2>
