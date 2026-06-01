@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import Navbar from '../components/Navbar';
 
 const Orders = ({ language, toggleLanguage }) => {
   const [orders, setOrders] = useState([]);
@@ -43,6 +44,7 @@ const Orders = ({ language, toggleLanguage }) => {
   };
 
   const t = translations[language];
+  const links = [];
 
   useEffect(() => {
     fetchOrders(currentPage);
@@ -112,39 +114,15 @@ const Orders = ({ language, toggleLanguage }) => {
     navigate(`/order-history/${orderId}`);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
-
   return (
     <div className="flex flex-col items-center gap-4 mt-10 px-6">
       {/* Navbar */}
-      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
-        <div className="flex items-center gap-4">
-          <img
-            src="/assets/logo.png"
-            alt="Magazyn Logo"
-            className="w-10 h-10 cursor-pointer"
-            onClick={() => navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker')}
-          />
-          <h1 className="text-lg font-bold">{t.orders}</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            onClick={toggleLanguage}
-          >
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-          >
-            {t.logout}
-          </button>
-        </div>
-      </nav>
+      <Navbar
+  userData={null}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  links={links}
+/>
 
       {/* Search */}
       <div className="flex justify-between items-center w-full mt-16 mb-4">
