@@ -115,7 +115,7 @@ const App = () => {
           <Route
             path="/locations"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director', 'worker']}>
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
                 <WarehouseLocations
                   language={language}
                   toggleLanguage={toggleLanguage}
@@ -127,7 +127,7 @@ const App = () => {
           <Route
             path="/products"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director', 'worker']}>
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
                 <Products
                   language={language}
                   toggleLanguage={toggleLanguage}
@@ -139,7 +139,7 @@ const App = () => {
           <Route
             path="/products/add"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director']}>
+              <ProtectedRoute allowedRoles={['managing director']}>
                 <AddProduct
                   language={language}
                   toggleLanguage={toggleLanguage}
@@ -151,7 +151,7 @@ const App = () => {
           <Route
             path="/products/update/:id"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director']}>
+              <ProtectedRoute allowedRoles={['managing director']}>
                 <UpdateProduct
                   language={language}
                   toggleLanguage={toggleLanguage}
@@ -163,7 +163,7 @@ const App = () => {
           <Route
             path="/orders"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director', 'worker']}>
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
                 <Orders
                   language={language}
                   toggleLanguage={toggleLanguage}
@@ -175,7 +175,7 @@ const App = () => {
           <Route
             path="/order-history/:orderId"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director', 'worker']}>
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
                 <OrderHistory
                   language={language}
                   toggleLanguage={toggleLanguage}
@@ -187,7 +187,7 @@ const App = () => {
           <Route
             path="/place-order"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'managing director', 'worker']}>
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
                 <PlaceOrder
                   language={language}
                   toggleLanguage={toggleLanguage}
