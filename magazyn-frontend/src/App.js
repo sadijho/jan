@@ -19,6 +19,8 @@ import OrderHistory from './pages/OrderHistory';
 import PlaceOrder from './pages/PlaceOrder';
 import DashboardWorker from './pages/DashboardWorker';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 const App = () => {
   const [language, setLanguage] = useState('pl');
 
@@ -32,72 +34,166 @@ const App = () => {
         <Routes>
           <Route
             path="/"
-            element={<Home language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <Home
+                language={language}
+                toggleLanguage={toggleLanguage}
+              />
+            }
           />
 
           <Route
             path="/about"
-            element={<About language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <About
+                language={language}
+                toggleLanguage={toggleLanguage}
+              />
+            }
           />
 
           <Route
             path="/dashboard"
-            element={<Dashboard language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Dashboard
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/user-management"
-            element={<UserManagement language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <UserManagement
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/user-management/register"
-            element={<RegisterUser language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <RegisterUser
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/dashboard-md"
-            element={<DashboardMD language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/locations"
-            element={<WarehouseLocations language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/products"
-            element={<Products language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/products/update/:id"
-            element={<UpdateProduct language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/products/add"
-            element={<AddProduct language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/orders"
-            element={<Orders language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/order-history/:orderId"
-            element={<OrderHistory language={language} toggleLanguage={toggleLanguage} />}
-          />
-
-          <Route
-            path="/place-order"
-            element={<PlaceOrder language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <ProtectedRoute allowedRoles={['managing director']}>
+                <DashboardMD
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="/dashboard-worker"
-            element={<DashboardWorker language={language} toggleLanguage={toggleLanguage} />}
+            element={
+              <ProtectedRoute allowedRoles={['worker']}>
+                <DashboardWorker
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/locations"
+            element={
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
+                <WarehouseLocations
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/products"
+            element={
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
+                <Products
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/products/add"
+            element={
+              <ProtectedRoute allowedRoles={['managing director']}>
+                <AddProduct
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/products/update/:id"
+            element={
+              <ProtectedRoute allowedRoles={['managing director']}>
+                <UpdateProduct
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
+                <Orders
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/order-history/:orderId"
+            element={
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
+                <OrderHistory
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/place-order"
+            element={
+              <ProtectedRoute allowedRoles={['managing director', 'worker']}>
+                <PlaceOrder
+                  language={language}
+                  toggleLanguage={toggleLanguage}
+                />
+              </ProtectedRoute>
+            }
           />
         </Routes>
 
