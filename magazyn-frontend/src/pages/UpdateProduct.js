@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { translate } from '../i18n/translations';
 
-const UpdateProduct = ({ language, toggleLanguage }) => {
+const UpdateProduct = ({ language }) => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [locations, setLocations] = useState([]);
@@ -14,42 +15,19 @@ const UpdateProduct = ({ language, toggleLanguage }) => {
     status: '',
     locationId: '',
   });
+
   const navigate = useNavigate();
-
-  const translations = {
-    pl: {
-      updateProduct: 'Aktualizuj Produkt',
-      name: 'Nazwa',
-      description: 'Opis',
-      quantity: 'Ilość',
-      status: 'Status',
-      location: 'Lokalizacja',
-      submit: 'Zapisz',
-      cancel: 'Anuluj',
-      statusError: 'Status może być tylko "wolne" lub "zajęte".',
-    },
-    en: {
-      updateProduct: 'Update Product',
-      name: 'Name',
-      description: 'Description',
-      quantity: 'Quantity',
-      status: 'Status',
-      location: 'Location',
-      submit: 'Save',
-      cancel: 'Cancel',
-      statusError: 'Status must be either "available" or "occupied".',
-    },
-  };
-
-  const t = translations[language];
+  const t = (key) => translate(language, key);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
         const token = localStorage.getItem('token');
+
         const response = await axios.get(`/api/products/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setProduct(response.data);
         setFormData({
           name: response.data.name || '',
@@ -66,9 +44,11 @@ const UpdateProduct = ({ language, toggleLanguage }) => {
     const fetchLocations = async () => {
       try {
         const token = localStorage.getItem('token');
+
         const response = await axios.get('/api/warehouse-locations', {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setLocations(response.data);
       } catch (err) {
         console.error('Error fetching locations:', err);
@@ -80,111 +60,167 @@ const UpdateProduct = ({ language, toggleLanguage }) => {
   }, [id]);
 
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    setFormData({
+      ...formData,
+      [field]: value,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!['wolne', 'zajęte'].includes(formData.status)) {
-      toast.error(t.statusError);
+      toast.error(t('common.statusError'));
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
+
       await axios.put(`/api/products/${id}`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success(language === 'pl' ? 'Produkt zaktualizowany pomyślnie!' : 'Product updated successfully!');
+
+      toast.success(t('common.productUpdated'));
       navigate('/products');
     } catch (err) {
       console.error('Error updating product:', err);
-      toast.error(language === 'pl' ? 'Nie udało się zaktualizować produktu.' : 'Failed to update product.');
+      toast.error(t('common.productUpdateError'));
     }
   };
 
   return (
     <div className="flex flex-col items-center p-6">
-      <h1 className="text-xl font-bold mb-4">{t.updateProduct}</h1>
+      <h1 className="text-xl font-bold mb-4">
+        {t('common.updateProduct')}
+      </h1>
+
       {product ? (
-        <form onSubmit={handleSubmit} className="w-full max-w-md">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full max-w-md"
+        >
           <div className="mb-4">
-            <label className="block text-gray-700">{t.name}</label>
+            <label className="block text-gray-700">
+              {t('table.name')}
+            </label>
+
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('name', e.target.value)
+              }
               className="w-full border border-gray-300 rounded px-3 py-2"
               required
             />
           </div>
+
           <div className="mb-4">
-            <label className="block text-gray-700">{t.description}</label>
+            <label className="block text-gray-700">
+              {t('table.description')}
+            </label>
+
             <input
               type="text"
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('description', e.target.value)
+              }
               className="w-full border border-gray-300 rounded px-3 py-2"
             />
           </div>
+
           <div className="mb-4">
-            <label className="block text-gray-700">{t.quantity}</label>
+            <label className="block text-gray-700">
+              {t('table.quantity')}
+            </label>
+
             <input
               type="number"
               value={formData.quantity}
-              onChange={(e) => handleInputChange('quantity', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('quantity', e.target.value)
+              }
               className="w-full border border-gray-300 rounded px-3 py-2"
               required
             />
           </div>
+
           <div className="mb-4">
-            <label className="block text-gray-700">{t.status}</label>
+            <label className="block text-gray-700">
+              {t('table.status')}
+            </label>
+
             <select
               value={formData.status}
-              onChange={(e) => handleInputChange('status', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('status', e.target.value)
+              }
               className="w-full border border-gray-300 rounded px-3 py-2"
               required
             >
-              <option value="">{language === 'pl' ? 'Wybierz status' : 'Select status'}</option>
-              <option value="wolne">{language === 'pl' ? 'Wolne' : 'Available'}</option>
-              <option value="zajęte">{language === 'pl' ? 'Zajęte' : 'Occupied'}</option>
+              <option value="">
+                {t('common.selectStatus')}
+              </option>
+
+              <option value="wolne">
+                {t('common.available')}
+              </option>
+
+              <option value="zajęte">
+                {t('common.occupied')}
+              </option>
             </select>
           </div>
+
           <div className="mb-4">
-            <label className="block text-gray-700">{t.location}</label>
+            <label className="block text-gray-700">
+              {t('common.location')}
+            </label>
+
             <select
               value={formData.locationId}
-              onChange={(e) => handleInputChange('locationId', e.target.value)}
+              onChange={(e) =>
+                handleInputChange('locationId', e.target.value)
+              }
               className="w-full border border-gray-300 rounded px-3 py-2"
               required
             >
-              <option value="">{language === 'pl' ? 'Wybierz lokalizację' : 'Select location'}</option>
+              <option value="">
+                {t('common.selectLocation')}
+              </option>
+
               {locations.map((location) => (
-                <option key={location.id} value={location.id}>
+                <option
+                  key={location.id}
+                  value={location.id}
+                >
                   {location.code}
                 </option>
               ))}
             </select>
           </div>
+
           <div className="flex justify-between">
             <button
               type="submit"
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              {t.submit}
+              {t('common.submit')}
             </button>
+
             <button
               type="button"
               onClick={() => navigate('/products')}
               className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
             >
-              {t.cancel}
+              {t('common.cancel')}
             </button>
           </div>
         </form>
       ) : (
-        <p>Loading...</p>
+        <p>{t('common.loading')}</p>
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
+import { translate } from '../i18n/translations';
 
 const UserManagement = ({ language, toggleLanguage }) => {
   const [users, setUsers] = useState([]);
@@ -13,73 +14,31 @@ const UserManagement = ({ language, toggleLanguage }) => {
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
+  const t = (key) => translate(language, key);
+
   const roleMap = {
     1: 'Admin',
     2: 'Managing Director',
     3: 'Worker',
   };
 
-  const translations = {
-    pl: {
-      logout: 'Wyloguj się',
-      users: 'Użytkownicy',
-      id: 'ID',
-      username: 'Nazwa użytkownika',
-      role: 'Rola',
-      firstName: 'Imię',
-      lastName: 'Nazwisko',
-      email: 'E-mail',
-      edit: 'Edytuj',
-      delete: 'Usuń',
-      save: 'Zapisz',
-      cancel: 'Anuluj',
-      prev: 'Wstecz',
-      next: 'Dalej',
-      addUser: 'Dodaj użytkownika',
-      noData: 'Brak danych do wyświetlenia.',
-    },
-    en: {
-      logout: 'Log out',
-      users: 'Users',
-      id: 'ID',
-      username: 'Username',
-      role: 'Role',
-      firstName: 'First Name',
-      lastName: 'Last Name',
-      email: 'E-mail',
-      edit: 'Edit',
-      delete: 'Delete',
-      save: 'Save',
-      cancel: 'Cancel',
-      prev: 'Previous',
-      next: 'Next',
-      addUser: 'Add User',
-      noData: 'No data to display.',
-    },
-  };
-
-  const t = translations[language] || translations.pl;
-
   const links = [
-  {
-    label: t.addUser,
-    path: '/user-management/register',
-    color: 'bg-green-500',
-  },
-];
+    {
+      label: t('common.addUser'),
+      path: '/user-management/register',
+      color: 'bg-green-500',
+    },
+  ];
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/');
-      return;
-    }
 
     const fetchUserData = async () => {
       try {
         const response = await axios.get('/api/users/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setUserData(response.data.user);
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -88,22 +47,22 @@ const UserManagement = ({ language, toggleLanguage }) => {
 
     fetchUserData();
     fetchUsers(currentPage);
-  }, [navigate, currentPage]);
+  }, [currentPage]);
 
   const fetchUsers = async (page) => {
     try {
       const token = localStorage.getItem('token');
+
       const response = await axios.get(`/api/users?page=${page}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setUsers(response.data.results);
       setTotalPages(response.data.totalPages);
     } catch (err) {
       console.error('Error fetching users:', err);
     }
   };
-
- 
 
   const handleEdit = (user) => {
     setEditingUser(user.id);
@@ -134,67 +93,72 @@ const UserManagement = ({ language, toggleLanguage }) => {
       await axios.put(`/api/users/${editingUser}`, updatedData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success(language === 'pl' ? 'Zmiany zostały zapisane.' : 'Changes saved successfully.');
+
+      toast.success(t('common.changesSaved'));
       setEditingUser(null);
       fetchUsers(currentPage);
     } catch (err) {
       console.error('Error saving user data:', err);
-      toast.error(language === 'pl' ? 'Nie udało się zapisać zmian.' : 'Failed to save changes.');
+      toast.error(t('common.changesSaveError'));
     }
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      language === 'pl'
-        ? 'Czy na pewno chcesz usunąć tego użytkownika?'
-        : 'Are you sure you want to delete this user?'
-    );
+    const confirmDelete = window.confirm(t('common.confirmDeleteUser'));
+
     if (!confirmDelete) return;
 
     const token = localStorage.getItem('token');
+
     try {
       await axios.delete(`/api/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success(language === 'pl' ? 'Użytkownik został usunięty.' : 'User deleted successfully.');
+
+      toast.success(t('common.userDeleted'));
       fetchUsers(currentPage);
     } catch (err) {
       console.error('Error deleting user:', err);
-      toast.error(language === 'pl' ? 'Nie udało się usunąć użytkownika.' : 'Failed to delete user.');
+      toast.error(t('common.userDeleteError'));
     }
   };
 
   const handleInputChange = (field, value) => {
-    setEditedUser({ ...editedUser, [field]: value });
+    setEditedUser({
+      ...editedUser,
+      [field]: value,
+    });
   };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Navbar */}
       <Navbar
-  userData={userData}
-  language={language}
-  toggleLanguage={toggleLanguage}
-  links={links}
-/>
+        userData={userData}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        links={links}
+      />
 
-      {/* User List */}
       <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <h2 className="text-xl font-bold mb-4">{t.users}</h2>
+        <h2 className="text-xl font-bold mb-4">
+          {t('common.users')}
+        </h2>
+
         {users.length > 0 ? (
           <>
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-200">
-                  <th className="border border-gray-300 px-4 py-2">{t.id}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t.username}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t.role}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t.firstName}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t.lastName}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t.email}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t.edit}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('table.id')}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('common.username')}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('common.role')}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('common.firstName')}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('common.lastName')}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('common.email')}</th>
+                  <th className="border border-gray-300 px-4 py-2">{t('table.actions')}</th>
                 </tr>
               </thead>
+
               <tbody>
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-100">
@@ -202,6 +166,7 @@ const UserManagement = ({ language, toggleLanguage }) => {
                       <>
                         <td className="border border-gray-300 px-4 py-2">{user.id}</td>
                         <td className="border border-gray-300 px-4 py-2">{user.username}</td>
+
                         <td className="border border-gray-300 px-4 py-2">
                           <select
                             value={editedUser.roleId || ''}
@@ -215,6 +180,7 @@ const UserManagement = ({ language, toggleLanguage }) => {
                             ))}
                           </select>
                         </td>
+
                         <td className="border border-gray-300 px-4 py-2">
                           <input
                             type="text"
@@ -223,6 +189,7 @@ const UserManagement = ({ language, toggleLanguage }) => {
                             className="border px-2 py-1 w-full"
                           />
                         </td>
+
                         <td className="border border-gray-300 px-4 py-2">
                           <input
                             type="text"
@@ -231,6 +198,7 @@ const UserManagement = ({ language, toggleLanguage }) => {
                             className="border px-2 py-1 w-full"
                           />
                         </td>
+
                         <td className="border border-gray-300 px-4 py-2">
                           <input
                             type="email"
@@ -239,18 +207,20 @@ const UserManagement = ({ language, toggleLanguage }) => {
                             className="border px-2 py-1 w-full"
                           />
                         </td>
+
                         <td className="border border-gray-300 px-4 py-2">
                           <button
                             onClick={handleSaveEdit}
                             className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 mr-2"
                           >
-                            {t.save}
+                            {t('common.save')}
                           </button>
+
                           <button
                             onClick={handleCancelEdit}
                             className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
                           >
-                            {t.cancel}
+                            {t('common.cancel')}
                           </button>
                         </td>
                       </>
@@ -259,23 +229,25 @@ const UserManagement = ({ language, toggleLanguage }) => {
                         <td className="border border-gray-300 px-4 py-2">{user.id}</td>
                         <td className="border border-gray-300 px-4 py-2">{user.username}</td>
                         <td className="border border-gray-300 px-4 py-2">
-                          {roleMap[user.role_id] || 'Brak roli'}
+                          {roleMap[user.role_id] || t('common.noRole')}
                         </td>
                         <td className="border border-gray-300 px-4 py-2">{user.first_name}</td>
                         <td className="border border-gray-300 px-4 py-2">{user.last_name}</td>
                         <td className="border border-gray-300 px-4 py-2">{user.email}</td>
+
                         <td className="border border-gray-300 px-4 py-2">
                           <button
                             onClick={() => handleEdit(user)}
                             className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mr-2"
                           >
-                            {t.edit}
+                            {t('common.edit')}
                           </button>
+
                           <button
                             onClick={() => handleDelete(user.id)}
                             className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
                           >
-                            {t.delete}
+                            {t('common.delete')}
                           </button>
                         </td>
                       </>
@@ -285,26 +257,28 @@ const UserManagement = ({ language, toggleLanguage }) => {
               </tbody>
             </table>
 
-            {/* Pagination */}
             <div className="flex justify-between mt-4">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
               >
-                {t.prev}
+                {t('common.previous')}
               </button>
+
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
               >
-                {t.next}
+                {t('common.next')}
               </button>
             </div>
           </>
         ) : (
-          <p className="text-gray-500">{t.noData}</p>
+          <p className="text-gray-500">
+            {t('common.noData')}
+          </p>
         )}
       </main>
     </div>
