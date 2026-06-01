@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { translate } from '../i18n/translations';
 
 const Navbar = ({
   userData,
@@ -8,10 +9,23 @@ const Navbar = ({
   links = [],
 }) => {
   const navigate = useNavigate();
+  const t = (key) => translate(language, key);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/');
+  };
+
+  const handleLogoClick = () => {
+    if (userData?.role === 'admin') {
+      navigate('/dashboard');
+    } else if (userData?.role === 'managing director') {
+      navigate('/dashboard-md');
+    } else if (userData?.role === 'worker') {
+      navigate('/dashboard-worker');
+    } else {
+      navigate('/');
+    }
   };
 
   return (
@@ -21,12 +35,7 @@ const Navbar = ({
           src="/assets/logo.png"
           alt="Magazyn Logo"
           className="w-10 h-10 cursor-pointer"
-          onClick={() => {
-  if (userData?.role === 'admin') navigate('/dashboard');
-  else if (userData?.role === 'managing director') navigate('/dashboard-md');
-  else if (userData?.role === 'worker') navigate('/dashboard-worker');
-  else navigate('/');
-}}
+          onClick={handleLogoClick}
         />
 
         {userData && (
@@ -36,16 +45,16 @@ const Navbar = ({
             </h1>
 
             <p className="text-sm text-gray-500 capitalize">
-              {userData.role}
+              {t(`roles.${userData.role}`)}
             </p>
           </div>
         )}
       </div>
 
       <div className="flex items-center gap-3">
-        {links.map((link, index) => (
+        {links.map((link) => (
           <button
-            key={index}
+            key={link.path}
             onClick={() => navigate(link.path)}
             className={`${link.color} px-4 py-2 rounded-lg text-white hover:opacity-90 transition`}
           >
@@ -64,7 +73,7 @@ const Navbar = ({
           onClick={handleLogout}
           className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
         >
-          {language === 'pl' ? 'Wyloguj się' : 'Log out'}
+          {t('common.logout')}
         </button>
       </div>
     </nav>

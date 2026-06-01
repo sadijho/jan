@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
 import Navbar from '../components/Navbar';
+import { translate } from '../i18n/translations';
 
 const DashboardWorker = ({ language, toggleLanguage }) => {
   const [userData, setUserData] = useState(null);
@@ -10,39 +9,16 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const navigate = useNavigate();
-
-  const translations = {
-    pl: {
-      orders: 'Moje zamówienia',
-      placeOrder: 'Złóż zamówienie',
-      statuses: 'Statusy',
-      noData: 'Brak danych do wyświetlenia.',
-      next: 'Dalej',
-      previous: 'Wstecz',
-    },
-
-    en: {
-      orders: 'My Orders',
-      placeOrder: 'Place Order',
-      statuses: 'Statuses',
-      noData: 'No data to display.',
-      next: 'Next',
-      previous: 'Previous',
-    },
-  };
-
-  const t = translations[language];
+  const t = (key) => translate(language, key);
 
   const links = [
     {
-      label: t.placeOrder,
+      label: t('common.placeOrder'),
       path: '/place-order',
       color: 'bg-green-500',
     },
-
     {
-      label: t.statuses,
+      label: t('common.statuses'),
       path: '/orders',
       color: 'bg-blue-500',
     },
@@ -91,11 +67,6 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
 
-    if (!token) {
-      navigate('/');
-      return;
-    }
-
     const fetchUserData = async () => {
       try {
         const response = await axios.get('/api/users/profile', {
@@ -111,7 +82,7 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
     };
 
     fetchUserData();
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     if (userData) {
@@ -129,7 +100,9 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
       />
 
       <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <h2 className="text-xl font-bold mb-4">{t.orders}</h2>
+        <h2 className="text-xl font-bold mb-4">
+          {t('common.myOrders')}
+        </h2>
 
         {groupedData.length > 0 ? (
           <>
@@ -137,11 +110,10 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
               <thead>
                 <tr className="bg-gray-200">
                   <th className="border border-gray-300 px-4 py-2">
-                    Order ID
+                    {t('table.orderId')}
                   </th>
-
                   <th className="border border-gray-300 px-4 py-2">
-                    Products
+                    {t('table.products')}
                   </th>
                 </tr>
               </thead>
@@ -150,11 +122,7 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
                 {groupedData.map((order, index) => (
                   <tr
                     key={order.order_id}
-                    className={
-                      index % 2 === 0
-                        ? 'bg-gray-100'
-                        : 'bg-white'
-                    }
+                    className={index % 2 === 0 ? 'bg-gray-100' : 'bg-white'}
                   >
                     <td className="border border-gray-300 px-4 py-2">
                       {order.order_id}
@@ -163,14 +131,10 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
                     <td className="border border-gray-300 px-4 py-2">
                       <ul>
                         {order.products.map((product, idx) => (
-                          <li
-                            key={idx}
-                            className="mb-2"
-                          >
+                          <li key={idx} className="mb-2">
                             <span className="font-bold">
                               {product.product_name}
                             </span>
-
                             : {product.quantity}
                           </li>
                         ))}
@@ -184,28 +148,24 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
             <div className="flex justify-between mt-4">
               <button
                 disabled={currentPage === 1}
-                onClick={() =>
-                  setCurrentPage((prev) => prev - 1)
-                }
+                onClick={() => setCurrentPage((prev) => prev - 1)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
               >
-                {t.previous}
+                {t('common.previous')}
               </button>
 
               <button
                 disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((prev) => prev + 1)
-                }
+                onClick={() => setCurrentPage((prev) => prev + 1)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
               >
-                {t.next}
+                {t('common.next')}
               </button>
             </div>
           </>
         ) : (
           <p className="text-gray-500">
-            {t.noData}
+            {t('common.noData')}
           </p>
         )}
       </main>
