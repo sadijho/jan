@@ -21,7 +21,12 @@ const Navbar = ({
           src="/assets/logo.png"
           alt="Magazyn Logo"
           className="w-10 h-10 cursor-pointer"
-          onClick={() => navigate('/')}
+          onClick={() => {
+  if (userData?.role === 'admin') navigate('/dashboard');
+  else if (userData?.role === 'managing director') navigate('/dashboard-md');
+  else if (userData?.role === 'worker') navigate('/dashboard-worker');
+  else navigate('/');
+}}
         />
 
         {userData && (
