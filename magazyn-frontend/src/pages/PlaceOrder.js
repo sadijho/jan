@@ -95,7 +95,7 @@ const PlaceOrder = ({ language, toggleLanguage }) => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 mt-10 px-6">
+    <div className="app-shell">
       <Navbar
         userData={null}
         language={language}
@@ -103,95 +103,127 @@ const PlaceOrder = ({ language, toggleLanguage }) => {
         links={links}
       />
 
-      <div className="w-full max-w-xl mt-20">
-        <h2 className="text-xl font-bold mb-4">
-          {t('common.placeOrder')}
-        </h2>
+      <main className="page-content max-w-4xl">
+        <div className="page-card">
+          <div className="toolbar">
+            <div>
+              <h1 className="page-title mb-1">
+                {t('common.placeOrder')}
+              </h1>
 
-        {selectedProducts.map((product, index) => (
-          <div
-            key={index}
-            className="flex items-center gap-4 mb-4"
-          >
-            <select
-              value={product.productId}
-              onChange={(e) =>
-                handleProductChange(index, 'productId', e.target.value)
-              }
-              className="border px-4 py-2 rounded-lg flex-1"
-            >
-              <option value="">
+              <p className="text-sm text-slate-500">
                 {t('common.selectProduct')}
-              </option>
-
-              {products.map((p) => (
-                <option
-                  key={p.id}
-                  value={p.id}
-                >
-                  {p.name} ({t('common.stockQuantity')}: {p.quantity})
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              min="1"
-              value={product.quantity}
-              onChange={(e) =>
-                handleProductChange(index, 'quantity', e.target.value)
-              }
-              className="border px-4 py-2 rounded-lg w-24"
-            />
+              </p>
+            </div>
 
             <button
-              onClick={() => handleRemoveProduct(index)}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-              aria-label={t('common.remove')}
+              onClick={handleAddProduct}
+              className="btn-primary"
             >
-              X
+              + {t('common.addProduct')}
             </button>
           </div>
-        ))}
 
-        <button
-          onClick={handleAddProduct}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
-          {t('common.addProduct')}
-        </button>
+          <div className="space-y-4">
+            {selectedProducts.length > 0 ? (
+              selectedProducts.map((product, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_140px_auto] md:items-end">
+                    <div>
+                      <label className="form-label">
+                        {t('common.selectProduct')}
+                      </label>
 
-        <div className="mt-4">
-          <label className="block mb-2">
-            {t('common.dueDate')}
-          </label>
+                      <select
+                        value={product.productId}
+                        onChange={(e) =>
+                          handleProductChange(index, 'productId', e.target.value)
+                        }
+                        className="form-input"
+                      >
+                        <option value="">
+                          {t('common.selectProduct')}
+                        </option>
 
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="border px-4 py-2 rounded-lg w-full"
-          />
+                        {products.map((p) => (
+                          <option
+                            key={p.id}
+                            value={p.id}
+                          >
+                            {p.name} ({t('common.stockQuantity')}: {p.quantity})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="form-label">
+                        {t('table.quantity')}
+                      </label>
+
+                      <input
+                        type="number"
+                        min="1"
+                        value={product.quantity}
+                        onChange={(e) =>
+                          handleProductChange(index, 'quantity', e.target.value)
+                        }
+                        className="form-input"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => handleRemoveProduct(index)}
+                      className="btn-danger"
+                      aria-label={t('common.remove')}
+                    >
+                      {t('common.remove')}
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                {t('common.noData')}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+            <label className="form-label">
+              {t('common.dueDate')}
+            </label>
+
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="form-input"
+            />
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              onClick={() =>
+                navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker')
+              }
+              className="btn-muted"
+            >
+              {t('common.cancel')}
+            </button>
+
+            <button
+              onClick={handleSubmitOrder}
+              className="btn-success"
+            >
+              {t('common.submitOrder')}
+            </button>
+          </div>
         </div>
-
-        <div className="flex justify-end gap-4 mt-6">
-          <button
-            onClick={() =>
-              navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker')
-            }
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
-          >
-            {t('common.cancel')}
-          </button>
-
-          <button
-            onClick={handleSubmitOrder}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-          >
-            {t('common.submitOrder')}
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

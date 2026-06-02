@@ -12,16 +12,8 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
   const t = (key) => translate(language, key);
 
   const links = [
-    {
-      label: t('common.placeOrder'),
-      path: '/place-order',
-      color: 'bg-green-500',
-    },
-    {
-      label: t('common.statuses'),
-      path: '/orders',
-      color: 'bg-blue-500',
-    },
+    { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
+    { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
   ];
 
   const fetchOrders = useCallback(async () => {
@@ -31,9 +23,7 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
       const response = await axios.get(
         `/api/order-products/user/${userData?.id}?page=${currentPage}&limit=7`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -70,9 +60,7 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get('/api/users/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         setUserData(response.data.user);
@@ -91,7 +79,7 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
   }, [fetchOrders, userData]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="app-shell">
       <Navbar
         userData={userData}
         language={language}
@@ -99,75 +87,82 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
         links={links}
       />
 
-      <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <h2 className="text-xl font-bold mb-4">
-          {t('common.myOrders')}
-        </h2>
+      <main className="page-content">
+        <div className="page-card">
+          <div className="toolbar">
+            <div>
+              <h1 className="page-title mb-1">
+                {t('common.myOrders')}
+              </h1>
 
-        {groupedData.length > 0 ? (
-          <>
-            <table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border border-gray-300 px-4 py-2">
-                    {t('table.orderId')}
-                  </th>
-                  <th className="border border-gray-300 px-4 py-2">
-                    {t('table.products')}
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {groupedData.map((order, index) => (
-                  <tr
-                    key={order.order_id}
-                    className={index % 2 === 0 ? 'bg-gray-100' : 'bg-white'}
-                  >
-                    <td className="border border-gray-300 px-4 py-2">
-                      {order.order_id}
-                    </td>
-
-                    <td className="border border-gray-300 px-4 py-2">
-                      <ul>
-                        {order.products.map((product, idx) => (
-                          <li key={idx} className="mb-2">
-                            <span className="font-bold">
-                              {product.product_name}
-                            </span>
-                            : {product.quantity}
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-between mt-4">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => prev - 1)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-              >
-                {t('common.previous')}
-              </button>
-
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-              >
-                {t('common.next')}
-              </button>
+              <p className="text-sm text-slate-500">
+                {userData
+                  ? `${userData.firstName} ${userData.lastName}`
+                  : t('common.loading')}
+              </p>
             </div>
-          </>
-        ) : (
-          <p className="text-gray-500">
-            {t('common.noData')}
-          </p>
-        )}
+          </div>
+
+          {groupedData.length > 0 ? (
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t('table.orderId')}</th>
+                      <th>{t('table.products')}</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {groupedData.map((order) => (
+                      <tr key={order.order_id}>
+                        <td className="font-semibold text-slate-900">
+                          #{order.order_id}
+                        </td>
+
+                        <td>
+                          <div className="flex flex-wrap gap-2">
+                            {order.products.map((product, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                              >
+                                {product.product_name}: {product.quantity}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="btn-muted"
+                >
+                  {t('common.previous')}
+                </button>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  className="btn-muted"
+                >
+                  {t('common.next')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              {t('common.noData')}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

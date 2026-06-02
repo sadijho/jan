@@ -17,64 +17,65 @@ const Navbar = ({
   };
 
   const handleLogoClick = () => {
-    if (userData?.role === 'admin') {
-      navigate('/dashboard');
-    } else if (userData?.role === 'managing director') {
-      navigate('/dashboard-md');
-    } else if (userData?.role === 'worker') {
-      navigate('/dashboard-worker');
-    } else {
-      navigate('/');
-    }
+    if (userData?.role === 'admin') navigate('/dashboard');
+    else if (userData?.role === 'managing director') navigate('/dashboard-md');
+    else if (userData?.role === 'worker') navigate('/dashboard-worker');
+    else navigate('/');
   };
 
   return (
-    <nav className="bg-white shadow-md px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10 border-b">
-      <div className="flex items-center gap-4">
-        <img
-          src="/assets/logo.png"
-          alt="Magazyn Logo"
-          className="w-10 h-10 cursor-pointer"
+    <nav className="fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-7xl -translate-x-1/2 rounded-2xl border border-white/60 bg-white/85 px-5 py-3 shadow-xl backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-4">
+        <button
           onClick={handleLogoClick}
-        />
+          className="flex items-center gap-3"
+        >
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md">
+            <img
+              src="/assets/logo.png"
+              alt="Magazyn Logo"
+              className="h-8 w-8 object-contain"
+            />
+          </span>
 
-        {userData && (
-          <div>
-            <h1 className="text-lg font-bold text-gray-800">
-              {userData.firstName} {userData.lastName}
-            </h1>
+          {userData && (
+            <span className="text-left">
+              <span className="block text-sm font-bold text-slate-800">
+                {userData.firstName} {userData.lastName}
+              </span>
 
-            <p className="text-sm text-gray-500 capitalize">
-              {t(`roles.${userData.role}`)}
-            </p>
-          </div>
-        )}
-      </div>
+              <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                {t(`roles.${userData.role}`)}
+              </span>
+            </span>
+          )}
+        </button>
 
-      <div className="flex items-center gap-3">
-        {links.map((link) => (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {links.map((link) => (
+            <button
+              key={link.path}
+              onClick={() => navigate(link.path)}
+              className="btn-primary"
+            >
+              {link.label}
+            </button>
+          ))}
+
           <button
-            key={link.path}
-            onClick={() => navigate(link.path)}
-            className={`${link.color} px-4 py-2 rounded-lg text-white hover:opacity-90 transition`}
+            onClick={toggleLanguage}
+            className="btn-muted"
           >
-            {link.label}
+            {language === 'pl' ? 'EN' : 'PL'}
           </button>
-        ))}
 
-        <button
-          onClick={toggleLanguage}
-          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-        >
-          {language === 'pl' ? 'EN' : 'PL'}
-        </button>
-
-        <button
-          onClick={handleLogout}
-          className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-        >
-          {t('common.logout')}
-        </button>
+          <button
+            onClick={handleLogout}
+            className="btn-danger"
+          >
+            {t('common.logout')}
+          </button>
+        </div>
       </div>
     </nav>
   );

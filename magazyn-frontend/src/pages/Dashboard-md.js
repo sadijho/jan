@@ -13,26 +13,10 @@ const DashboardMD = ({ language, toggleLanguage }) => {
   const t = (key) => translate(language, key);
 
   const links = [
-    {
-      label: t('common.locations'),
-      path: '/locations',
-      color: 'bg-blue-500',
-    },
-    {
-      label: t('common.products'),
-      path: '/products',
-      color: 'bg-blue-500',
-    },
-    {
-      label: t('common.statuses'),
-      path: '/orders',
-      color: 'bg-blue-500',
-    },
-    {
-      label: t('common.placeOrder'),
-      path: '/place-order',
-      color: 'bg-green-500',
-    },
+    { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
+    { label: t('common.products'), path: '/products', color: 'bg-blue-500' },
+    { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
+    { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
   ];
 
   const fetchOrderProducts = useCallback(async () => {
@@ -98,7 +82,7 @@ const DashboardMD = ({ language, toggleLanguage }) => {
   }, [fetchOrderProducts, userData]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="app-shell">
       <Navbar
         userData={userData}
         language={language}
@@ -106,109 +90,104 @@ const DashboardMD = ({ language, toggleLanguage }) => {
         links={links}
       />
 
-      <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">
-            {t('common.orders')}
-          </h2>
+      <main className="page-content">
+        <div className="page-card">
+          <div className="toolbar">
+            <div>
+              <h1 className="page-title mb-1">
+                {t('common.orders')}
+              </h1>
 
-          <div className="flex gap-4">
-            <button
-              onClick={() => setShowAllOrders(true)}
-              className={`px-4 py-2 rounded-lg ${
-                showAllOrders
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {t('common.allOrders')}
-            </button>
+              <p className="text-sm text-slate-500">
+                {userData
+                  ? `${userData.firstName} ${userData.lastName}`
+                  : t('common.loading')}
+              </p>
+            </div>
 
-            <button
-              onClick={() => setShowAllOrders(false)}
-              className={`px-4 py-2 rounded-lg ${
-                !showAllOrders
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {t('common.myOrders')}
-            </button>
-          </div>
-        </div>
-
-        {groupedData.length > 0 ? (
-          <>
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border border-gray-300 px-4 py-2">
-                    {t('table.orderId')}
-                  </th>
-                  <th className="border border-gray-300 px-4 py-2">
-                    {t('table.products')}
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {groupedData.map((order, index) => (
-                  <tr
-                    key={order.order_id}
-                    className={index % 2 === 0 ? 'bg-gray-100' : 'bg-white'}
-                  >
-                    <td className="border border-gray-300 px-4 py-2">
-                      {order.order_id}
-                    </td>
-
-                    <td className="border border-gray-300 px-4 py-2">
-                      <ul>
-                        {order.products.map((product, idx) => (
-                          <li key={idx} className="mb-2">
-                            <span className="font-bold">
-                              {product.product_name}
-                            </span>
-                            : {product.quantity}
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-between mt-4">
+            <div className="flex gap-2">
               <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => prev - 1)}
-                className={`px-4 py-2 rounded-lg ${
-                  currentPage === 1
-                    ? 'bg-gray-200 text-gray-400'
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
-                }`}
+                onClick={() => {
+                  setShowAllOrders(true);
+                  setCurrentPage(1);
+                }}
+                className={showAllOrders ? 'btn-primary' : 'btn-muted'}
               >
-                {t('common.previous')}
+                {t('common.allOrders')}
               </button>
 
               <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-                className={`px-4 py-2 rounded-lg ${
-                  currentPage === totalPages
-                    ? 'bg-gray-200 text-gray-400'
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
-                }`}
+                onClick={() => {
+                  setShowAllOrders(false);
+                  setCurrentPage(1);
+                }}
+                className={!showAllOrders ? 'btn-primary' : 'btn-muted'}
               >
-                {t('common.next')}
+                {t('common.myOrders')}
               </button>
             </div>
-          </>
-        ) : (
-          <p className="text-gray-500">
-            {t('common.noData')}
-          </p>
-        )}
+          </div>
+
+          {groupedData.length > 0 ? (
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t('table.orderId')}</th>
+                      <th>{t('table.products')}</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {groupedData.map((order) => (
+                      <tr key={order.order_id}>
+                        <td className="font-semibold text-slate-900">
+                          #{order.order_id}
+                        </td>
+
+                        <td>
+                          <div className="flex flex-wrap gap-2">
+                            {order.products.map((product, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                              >
+                                {product.product_name}: {product.quantity}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="btn-muted"
+                >
+                  {t('common.previous')}
+                </button>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  className="btn-muted"
+                >
+                  {t('common.next')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              {t('common.noData')}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
