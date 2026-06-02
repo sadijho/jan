@@ -31,7 +31,6 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem('theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
-    document.body.classList.toggle('dark-mode', theme === 'dark');
   }, [theme]);
 
   const toggleLanguage = () => {
@@ -54,7 +53,6 @@ const App = () => {
       <>
         <Routes>
           <Route path="/" element={<Home {...sharedProps} />} />
-
           <Route path="/about" element={<About {...sharedProps} />} />
 
           <Route

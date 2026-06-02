@@ -68,7 +68,6 @@ const Navbar = ({
           type="button"
           onClick={toggleTheme}
           className="btn-muted"
-          title={theme === 'dark' ? 'Light mode' : 'Night mode'}
         >
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
