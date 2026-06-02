@@ -17,9 +17,9 @@ const WarehouseLocations = ({ language, toggleLanguage }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        setLocations(response.data);
+        setLocations(response.data || []);
       } catch (err) {
-        console.error('Error fetching warehouse locations:', err);
+        setLocations([]);
       }
     };
 
@@ -27,7 +27,7 @@ const WarehouseLocations = ({ language, toggleLanguage }) => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="app-shell">
       <Navbar
         userData={null}
         language={language}
@@ -35,55 +35,42 @@ const WarehouseLocations = ({ language, toggleLanguage }) => {
         links={links}
       />
 
-      <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <h2 className="text-xl font-bold mb-4">
-          {t('common.warehouseLocations')}
-        </h2>
+      <main className="page-content">
+        <section className="page-card">
+          <div className="toolbar">
+            <h2 className="page-title">
+              {t('common.warehouseLocations')}
+            </h2>
+          </div>
 
-        {locations && locations.length > 0 ? (
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border border-gray-300 px-4 py-2">
-                  {t('table.id')}
-                </th>
+          {locations && locations.length > 0 ? (
+            <div className="data-table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{t('table.id')}</th>
+                    <th>{t('common.code')}</th>
+                    <th>{t('table.description')}</th>
+                  </tr>
+                </thead>
 
-                <th className="border border-gray-300 px-4 py-2">
-                  {t('common.code')}
-                </th>
-
-                <th className="border border-gray-300 px-4 py-2">
-                  {t('table.description')}
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {locations.map((location, index) => (
-                <tr
-                  key={location.id}
-                  className={index % 2 === 0 ? 'bg-gray-100' : 'bg-white'}
-                >
-                  <td className="border border-gray-300 px-4 py-2">
-                    {location.id}
-                  </td>
-
-                  <td className="border border-gray-300 px-4 py-2">
-                    {location.code}
-                  </td>
-
-                  <td className="border border-gray-300 px-4 py-2">
-                    {location.description}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-gray-500">
-            {t('common.noData')}
-          </p>
-        )}
+                <tbody>
+                  {locations.map((location) => (
+                    <tr key={location.id}>
+                      <td>#{location.id}</td>
+                      <td>{location.code}</td>
+                      <td>{location.description || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              {t('common.noData')}
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );

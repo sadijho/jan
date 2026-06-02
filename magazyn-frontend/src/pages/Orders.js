@@ -1,25 +1,70 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import Navbar from '../components/Navbar';
-import { translate } from '../i18n/translations';
 
 const Orders = ({ language, toggleLanguage }) => {
   const [orders, setOrders] = useState([]);
   const [searchId, setSearchId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [userRole, setUserRole] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
-  const t = (key) => translate(language, key);
-  const links = [];
+  const translations = {
+    pl: {
+      orders: 'Zamówienia',
+      orderId: 'ID zamówienia',
+      status: 'Status',
+      dueDate: 'Termin realizacji',
+      orderedBy: 'Złożone przez',
+      actions: 'Akcje',
+      search: 'Szukaj',
+      searchPlaceholder: 'Wpisz ID zamówienia...',
+      clear: 'Wyczyść',
+      update: 'Zrealizuj',
+      viewHistory: 'Historia',
+      logout: 'Wyloguj się',
+      noData: 'Brak danych do wyświetlenia.',
+      next: 'Dalej',
+      previous: 'Wstecz',
+      page: 'Strona',
+      of: 'z',
+      completed: 'Zrealizowane',
+      inProgress: 'W trakcie',
+      unknownStatus: 'Nieznany status',
+      statusUpdated: 'Status zamówienia został zaktualizowany!',
+      statusUpdateError: 'Nie udało się zaktualizować statusu zamówienia.',
+    },
+    en: {
+      orders: 'Orders',
+      orderId: 'Order ID',
+      status: 'Status',
+      dueDate: 'Due date',
+      orderedBy: 'Ordered by',
+      actions: 'Actions',
+      search: 'Search',
+      searchPlaceholder: 'Enter order ID...',
+      clear: 'Clear',
+      update: 'Complete',
+      viewHistory: 'History',
+      logout: 'Log out',
+      noData: 'No data to display.',
+      next: 'Next',
+      previous: 'Previous',
+      page: 'Page',
+      of: 'of',
+      completed: 'Completed',
+      inProgress: 'In progress',
+      unknownStatus: 'Unknown status',
+      statusUpdated: 'Order status updated!',
+      statusUpdateError: 'Failed to update order status.',
+    },
+  };
 
-  useEffect(() => {
-    fetchOrders(currentPage);
-  }, [currentPage]);
+  const t = translations[language] || translations.pl;
 
-  const fetchOrders = async (page) => {
+  const fetchOrders = useCallback(async (page = 1) => {
     const token = localStorage.getItem('token');
 
     try {
@@ -27,32 +72,71 @@ const Orders = ({ language, toggleLanguage }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setOrders(response.data.results);
-      setTotalPages(response.data.totalPages);
+      setOrders(response.data.results || []);
+      setTotalPages(response.data.totalPages || 1);
     } catch (err) {
-      console.error('Error fetching orders:', err);
+      setOrders([]);
     }
-  };
+  }, []);
+
+  const fetchUserRole = useCallback(async () => {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.get('/api/users/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUserRole(response.data.user.role);
+    } catch (err) {
+      setUserRole('');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUserRole();
+  }, [fetchUserRole]);
+
+  useEffect(() => {
+    if (!isSearching) {
+      fetchOrders(currentPage);
+    }
+  }, [currentPage, fetchOrders, isSearching]);
 
   const handleSearchById = async () => {
-    if (!searchId.trim()) {
-      fetchOrders(currentPage);
+    const trimmedSearchId = searchId.trim();
+
+    if (!trimmedSearchId) {
+      setIsSearching(false);
+      setCurrentPage(1);
+      fetchOrders(1);
       return;
     }
 
     const token = localStorage.getItem('token');
 
     try {
-      const response = await axios.get(`/api/orders/${searchId}`, {
+      const response = await axios.get(`/api/orders/${trimmedSearchId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       setOrders([response.data]);
       setTotalPages(1);
+      setCurrentPage(1);
+      setIsSearching(true);
     } catch (err) {
-      console.error('Error searching order by ID:', err);
       setOrders([]);
+      setTotalPages(1);
+      setCurrentPage(1);
+      setIsSearching(true);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchId('');
+    setIsSearching(false);
+    setCurrentPage(1);
+    fetchOrders(1);
   };
 
   const handleUpdateStatus = async (orderId) => {
@@ -65,11 +149,15 @@ const Orders = ({ language, toggleLanguage }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success(t('common.orderStatusUpdated'));
-      fetchOrders(currentPage);
+      alert(t.statusUpdated);
+
+      if (isSearching && searchId.trim()) {
+        handleSearchById();
+      } else {
+        fetchOrders(currentPage);
+      }
     } catch (err) {
-      console.error('Error updating order status:', err);
-      toast.error(t('common.orderStatusUpdateError'));
+      alert(t.statusUpdateError);
     }
   };
 
@@ -77,124 +165,174 @@ const Orders = ({ language, toggleLanguage }) => {
     navigate(`/order-history/${orderId}`);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/');
+  };
+
+  const getDashboardPath = () => {
+    if (userRole === 'managing director') return '/dashboard-md';
+    if (userRole === 'worker') return '/dashboard-worker';
+    return '/dashboard';
+  };
+
+  const getStatusLabel = (status) => {
+    if (status === 'zrealizowane') return t.completed;
+    if (status === 'w trakcie') return t.inProgress;
+    return status || t.unknownStatus;
+  };
+
+  const getStatusClassName = (status) => {
+    if (status === 'zrealizowane') {
+      return 'inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700';
+    }
+
+    if (status === 'w trakcie') {
+      return 'inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700';
+    }
+
+    return 'inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700';
+  };
+
   return (
-    <div className="flex flex-col items-center gap-4 mt-10 px-6">
-      <Navbar
-        userData={null}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={links}
-      />
+    <div className="app-shell">
+      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
+        <div className="flex items-center gap-4">
+          <img
+            src="/assets/logo.png"
+            alt="Magazyn Logo"
+            className="w-10 h-10 cursor-pointer"
+            onClick={() => navigate(getDashboardPath())}
+          />
+          <h1 className="text-lg font-bold text-gray-800">{t.orders}</h1>
+        </div>
 
-      <div className="flex justify-between items-center w-full mt-16 mb-4">
-        <input
-          type="text"
-          placeholder={t('common.search')}
-          value={searchId}
-          onChange={(e) => setSearchId(e.target.value)}
-          className="border px-4 py-2 rounded-lg flex-1"
-        />
+        <div className="flex items-center gap-4">
+          <button className="btn-muted" onClick={toggleLanguage}>
+            {language === 'pl' ? 'EN' : 'PL'}
+          </button>
+          <button onClick={handleLogout} className="btn-danger">
+            {t.logout}
+          </button>
+        </div>
+      </nav>
 
-        <button
-          onClick={handleSearchById}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ml-4"
-        >
-          {t('common.search')}
-        </button>
-      </div>
+      <main className="page-content">
+        <section className="page-card">
+          <div className="toolbar">
+            <h2 className="page-title">{t.orders}</h2>
 
-      {orders.length > 0 ? (
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border border-gray-300 px-2 py-2 w-16">
-                {t('common.orderId')}
-              </th>
+            <div className="flex flex-wrap gap-3">
+              <input
+                type="text"
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearchById();
+                }}
+                placeholder={t.searchPlaceholder}
+                className="form-input min-w-[240px]"
+              />
 
-              <th className="border border-gray-300 px-4 py-2">
-                {t('table.status')}
-              </th>
+              <button onClick={handleSearchById} className="btn-primary">
+                {t.search}
+              </button>
 
-              <th className="border border-gray-300 px-4 py-2">
-                {t('common.dueDate')}
-              </th>
+              {isSearching && (
+                <button onClick={handleClearSearch} className="btn-muted">
+                  {t.clear}
+                </button>
+              )}
+            </div>
+          </div>
 
-              <th className="border border-gray-300 px-4 py-2">
-                {t('common.orderedBy')}
-              </th>
+          {orders.length > 0 ? (
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t.orderId}</th>
+                      <th>{t.status}</th>
+                      <th>{t.dueDate}</th>
+                      <th>{t.orderedBy}</th>
+                      <th>{t.actions}</th>
+                    </tr>
+                  </thead>
 
-              <th className="border border-gray-300 px-4 py-2">
-                {t('table.actions')}
-              </th>
-            </tr>
-          </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.order_id}>
+                        <td>#{order.order_id}</td>
+                        <td>
+                          <span className={getStatusClassName(order.status)}>
+                            {getStatusLabel(order.status)}
+                          </span>
+                        </td>
+                        <td>
+                          {order.due_date
+                            ? new Date(order.due_date).toLocaleDateString()
+                            : '-'}
+                        </td>
+                        <td>
+                          {order.first_name || order.last_name
+                            ? `${order.first_name || ''} ${order.last_name || ''}`.trim()
+                            : '-'}
+                        </td>
+                        <td>
+                          <div className="flex flex-wrap gap-2">
+                            {order.status !== 'zrealizowane' && (
+                              <button
+                                onClick={() => handleUpdateStatus(order.order_id)}
+                                className="btn-primary"
+                              >
+                                {t.update}
+                              </button>
+                            )}
 
-          <tbody>
-            {orders.map((order) => (
-              <tr
-                key={order.order_id}
-                className="hover:bg-gray-100"
-              >
-                <td className="border border-gray-300 px-2 py-2">
-                  {order.order_id}
-                </td>
+                            <button
+                              onClick={() => handleViewHistory(order.order_id)}
+                              className="btn-success"
+                            >
+                              {t.viewHistory}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                <td className="border border-gray-300 px-4 py-2">
-                  {order.status}
-                </td>
+              {!isSearching && (
+                <div className="toolbar mt-6">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    className="btn-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t.previous}
+                  </button>
 
-                <td className="border border-gray-300 px-4 py-2">
-                  {new Date(order.due_date).toLocaleDateString()}
-                </td>
-
-                <td className="border border-gray-300 px-4 py-2">
-                  {order.first_name} {order.last_name}
-                </td>
-
-                <td className="border border-gray-300 px-4 py-2">
-                  {order.status !== 'zrealizowane' && (
-                    <button
-                      onClick={() => handleUpdateStatus(order.order_id)}
-                      className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mr-2"
-                    >
-                      {t('common.markAsCompleted')}
-                    </button>
-                  )}
+                  <span className="text-sm font-medium text-gray-600">
+                    {t.page} {currentPage} {t.of} {totalPages}
+                  </span>
 
                   <button
-                    onClick={() => handleViewHistory(order.order_id)}
-                    className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="btn-muted disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t('common.viewHistory')}
+                    {t.next}
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="text-gray-500 mt-4">
-          {t('common.noData')}
-        </p>
-      )}
-
-      <div className="flex justify-between mt-4 w-full">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => prev - 1)}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-        >
-          {t('common.previous')}
-        </button>
-
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-        >
-          {t('common.next')}
-        </button>
-      </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="empty-state">{t.noData}</div>
+          )}
+        </section>
+      </main>
     </div>
   );
 };

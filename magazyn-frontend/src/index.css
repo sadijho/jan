@@ -113,3 +113,235 @@ code {
     @apply flex flex-wrap items-center justify-between gap-4 mb-6;
   }
 }
+
+:root {
+  --bg-main: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-navbar: #ffffff;
+  --bg-muted: #f3f4f6;
+
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+
+  --success: #16a34a;
+  --success-hover: #15803d;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+}
+
+html[data-theme='dark'] {
+  --bg-main: #111827;
+  --bg-card: #1f2937;
+  --bg-navbar: #111827;
+  --bg-muted: #374151;
+
+  --text-main: #f9fafb;
+  --text-muted: #d1d5db;
+  --border-color: #374151;
+
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+
+  --success: #22c55e;
+  --success-hover: #16a34a;
+
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+}
+
+body {
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+.page-content {
+  width: 100%;
+  padding: 6rem 1.5rem 2rem;
+}
+
+.page-card {
+  width: 100%;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  background: var(--bg-navbar);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-user-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.navbar-user-role {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.data-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 0.875rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.875rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.data-table th {
+  background: var(--bg-muted);
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.data-table tr:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+html[data-theme='dark'] .data-table tr:hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.form-input {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 0.75rem 0.9rem;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.empty-state {
+  border: 1px dashed var(--border-color);
+  border-radius: 0.875rem;
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  padding: 2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-muted {
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+  transition: 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-success {
+  background: var(--success);
+  color: #ffffff;
+}
+
+.btn-success:hover {
+  background: var(--success-hover);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background: var(--danger-hover);
+}
+
+.btn-muted {
+  background: var(--bg-muted);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.btn-muted:hover {
+  filter: brightness(0.96);
+}
+
+html[data-theme='dark'] .btn-muted:hover {
+  filter: brightness(1.12);
+}

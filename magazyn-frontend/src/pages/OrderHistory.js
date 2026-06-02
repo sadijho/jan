@@ -1,16 +1,51 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import { translate } from '../i18n/translations';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const OrderHistory = ({ language, toggleLanguage }) => {
   const [history, setHistory] = useState([]);
+  const [userRole, setUserRole] = useState('');
   const { orderId } = useParams();
   const navigate = useNavigate();
 
-  const t = (key) => translate(language, key);
-  const links = [];
+  const translations = {
+    pl: {
+      history: 'Historia zamówienia',
+      orderNumber: 'Zamówienie',
+      changeDate: 'Data zmiany statusu',
+      changedBy: 'Zmienione przez',
+      back: 'Wróć',
+      logout: 'Wyloguj się',
+      noData: 'Brak danych do wyświetlenia.',
+      unknownUser: 'Nieznany użytkownik',
+    },
+    en: {
+      history: 'Order history',
+      orderNumber: 'Order',
+      changeDate: 'Status change date',
+      changedBy: 'Changed by',
+      back: 'Back',
+      logout: 'Log out',
+      noData: 'No data to display.',
+      unknownUser: 'Unknown user',
+    },
+  };
+
+  const t = translations[language] || translations.pl;
+
+  const fetchUserRole = useCallback(async () => {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.get('/api/users/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUserRole(response.data.user.role);
+    } catch (err) {
+      setUserRole('');
+    }
+  }, []);
 
   const fetchOrderHistory = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -20,74 +55,95 @@ const OrderHistory = ({ language, toggleLanguage }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setHistory(response.data);
+      setHistory(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      console.error('Error fetching order history:', err);
       setHistory([]);
     }
   }, [orderId]);
 
   useEffect(() => {
+    fetchUserRole();
     fetchOrderHistory();
-  }, [fetchOrderHistory]);
+  }, [fetchUserRole, fetchOrderHistory]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/');
+  };
+
+  const getDashboardPath = () => {
+    if (userRole === 'managing director') return '/dashboard-md';
+    if (userRole === 'worker') return '/dashboard-worker';
+    return '/dashboard';
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleString();
+  };
 
   return (
-    <div className="flex flex-col items-center gap-4 mt-10 px-6">
-      <Navbar
-        userData={null}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={links}
-      />
+    <div className="app-shell">
+      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
+        <div className="flex items-center gap-4">
+          <img
+            src="/assets/logo.png"
+            alt="Magazyn Logo"
+            className="w-10 h-10 cursor-pointer"
+            onClick={() => navigate(getDashboardPath())}
+          />
+          <h1 className="text-lg font-bold text-gray-800">{t.history}</h1>
+        </div>
 
-      <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <h1 className="text-xl font-bold mb-4">
-          {t('common.history')}
-        </h1>
+        <div className="flex items-center gap-4">
+          <button className="btn-muted" onClick={toggleLanguage}>
+            {language === 'pl' ? 'EN' : 'PL'}
+          </button>
+          <button onClick={handleLogout} className="btn-danger">
+            {t.logout}
+          </button>
+        </div>
+      </nav>
 
-        {history.length > 0 ? (
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border border-gray-300 px-4 py-2">
-                  {t('common.changeDate')}
-                </th>
+      <main className="page-content">
+        <section className="page-card">
+          <div className="toolbar">
+            <div>
+              <h2 className="page-title">{t.history}</h2>
+              <p className="text-sm text-gray-500">
+                {t.orderNumber} #{orderId}
+              </p>
+            </div>
 
-                <th className="border border-gray-300 px-4 py-2">
-                  {t('common.changedBy')}
-                </th>
-              </tr>
-            </thead>
+            <button onClick={() => navigate('/orders')} className="btn-muted">
+              {t.back}
+            </button>
+          </div>
 
-            <tbody>
-              {history.map((entry) => (
-                <tr
-                  key={entry.id}
-                  className="hover:bg-gray-100"
-                >
-                  <td className="border border-gray-300 px-4 py-2">
-                    {new Date(entry.status_change_date).toLocaleString()}
-                  </td>
+          {history.length > 0 ? (
+            <div className="data-table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{t.changeDate}</th>
+                    <th>{t.changedBy}</th>
+                  </tr>
+                </thead>
 
-                  <td className="border border-gray-300 px-4 py-2">
-                    {entry.changed_by_username}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-gray-500">
-            {t('common.noData')}
-          </p>
-        )}
-
-        <button
-          onClick={() => navigate('/orders')}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
-          {t('common.back')}
-        </button>
+                <tbody>
+                  {history.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{formatDate(entry.status_change_date)}</td>
+                      <td>{entry.changed_by_username || t.unknownUser}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">{t.noData}</div>
+          )}
+        </section>
       </main>
     </div>
   );

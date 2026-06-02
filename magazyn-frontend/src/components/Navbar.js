@@ -7,6 +7,8 @@ const Navbar = ({
   language,
   toggleLanguage,
   links = [],
+  theme = 'light',
+  toggleTheme,
 }) => {
   const navigate = useNavigate();
   const t = (key) => translate(language, key);
@@ -17,65 +19,75 @@ const Navbar = ({
   };
 
   const handleLogoClick = () => {
-    if (userData?.role === 'admin') navigate('/dashboard');
-    else if (userData?.role === 'managing director') navigate('/dashboard-md');
-    else if (userData?.role === 'worker') navigate('/dashboard-worker');
-    else navigate('/');
+    if (userData?.role === 'admin') {
+      navigate('/dashboard');
+    } else if (userData?.role === 'managing director') {
+      navigate('/dashboard-md');
+    } else if (userData?.role === 'worker') {
+      navigate('/dashboard-worker');
+    } else {
+      navigate('/');
+    }
   };
 
   return (
-    <nav className="fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-7xl -translate-x-1/2 rounded-2xl border border-white/60 bg-white/85 px-5 py-3 shadow-xl backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-4">
-        <button
+    <nav className="navbar">
+      <div className="flex items-center gap-4">
+        <img
+          src="/assets/logo.png"
+          alt="Magazyn Logo"
+          className="w-10 h-10 cursor-pointer"
           onClick={handleLogoClick}
-          className="flex items-center gap-3"
+        />
+
+        {userData && (
+          <div>
+            <h1 className="navbar-user-name">
+              {userData.firstName} {userData.lastName}
+            </h1>
+
+            <p className="navbar-user-role">
+              {t(`roles.${userData.role}`)}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        {links.map((link) => (
+          <button
+            key={link.path}
+            onClick={() => navigate(link.path)}
+            className={`${link.color} px-4 py-2 rounded-lg text-white hover:opacity-90 transition`}
+          >
+            {link.label}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="btn-muted"
+          title={theme === 'dark' ? 'Light mode' : 'Night mode'}
         >
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md">
-            <img
-              src="/assets/logo.png"
-              alt="Magazyn Logo"
-              className="h-8 w-8 object-contain"
-            />
-          </span>
-
-          {userData && (
-            <span className="text-left">
-              <span className="block text-sm font-bold text-slate-800">
-                {userData.firstName} {userData.lastName}
-              </span>
-
-              <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                {t(`roles.${userData.role}`)}
-              </span>
-            </span>
-          )}
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {links.map((link) => (
-            <button
-              key={link.path}
-              onClick={() => navigate(link.path)}
-              className="btn-primary"
-            >
-              {link.label}
-            </button>
-          ))}
+        <button
+          type="button"
+          onClick={toggleLanguage}
+          className="btn-muted"
+        >
+          {language === 'pl' ? 'EN' : 'PL'}
+        </button>
 
-          <button
-            onClick={toggleLanguage}
-            className="btn-muted"
-          >
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="btn-danger"
-          >
-            {t('common.logout')}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="btn-danger"
+        >
+          {t('common.logout')}
+        </button>
       </div>
     </nav>
   );

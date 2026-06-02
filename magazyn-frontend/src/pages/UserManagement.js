@@ -1,9 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import Navbar from '../components/Navbar';
-import { translate } from '../i18n/translations';
 
 const UserManagement = ({ language, toggleLanguage }) => {
   const [users, setUsers] = useState([]);
@@ -14,54 +11,117 @@ const UserManagement = ({ language, toggleLanguage }) => {
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
-  const t = (key) => translate(language, key);
-
   const roleMap = {
     1: 'Admin',
     2: 'Managing Director',
     3: 'Worker',
   };
 
-  const links = [
-    {
-      label: t('common.addUser'),
-      path: '/user-management/register',
-      color: 'bg-green-500',
+  const translations = {
+    pl: {
+      logout: 'Wyloguj się',
+      users: 'Użytkownicy',
+      id: 'ID',
+      username: 'Nazwa użytkownika',
+      role: 'Rola',
+      firstName: 'Imię',
+      lastName: 'Nazwisko',
+      email: 'E-mail',
+      actions: 'Akcje',
+      edit: 'Edytuj',
+      delete: 'Usuń',
+      save: 'Zapisz',
+      cancel: 'Anuluj',
+      prev: 'Wstecz',
+      next: 'Dalej',
+      addUser: 'Dodaj użytkownika',
+      noData: 'Brak danych do wyświetlenia.',
+      page: 'Strona',
+      of: 'z',
+      noRole: 'Brak roli',
+      confirmDelete: 'Czy na pewno chcesz usunąć tego użytkownika?',
+      deleteSuccess: 'Użytkownik został usunięty.',
+      deleteError: 'Nie udało się usunąć użytkownika.',
+      saveSuccess: 'Zmiany zostały zapisane.',
+      saveError: 'Nie udało się zapisać zmian.',
     },
-  ];
+    en: {
+      logout: 'Log out',
+      users: 'Users',
+      id: 'ID',
+      username: 'Username',
+      role: 'Role',
+      firstName: 'First name',
+      lastName: 'Last name',
+      email: 'E-mail',
+      actions: 'Actions',
+      edit: 'Edit',
+      delete: 'Delete',
+      save: 'Save',
+      cancel: 'Cancel',
+      prev: 'Previous',
+      next: 'Next',
+      addUser: 'Add user',
+      noData: 'No data to display.',
+      page: 'Page',
+      of: 'of',
+      noRole: 'No role',
+      confirmDelete: 'Are you sure you want to delete this user?',
+      deleteSuccess: 'User deleted successfully.',
+      deleteError: 'Failed to delete user.',
+      saveSuccess: 'Changes saved successfully.',
+      saveError: 'Failed to save changes.',
+    },
+  };
 
-  useEffect(() => {
+  const t = translations[language] || translations.pl;
+
+  const fetchUsers = useCallback(async (page) => {
     const token = localStorage.getItem('token');
 
-    const fetchUserData = async () => {
-      try {
-        const response = await axios.get('/api/users/profile', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setUserData(response.data.user);
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-      }
-    };
-
-    fetchUserData();
-    fetchUsers(currentPage);
-  }, [currentPage]);
-
-  const fetchUsers = async (page) => {
     try {
-      const token = localStorage.getItem('token');
-
       const response = await axios.get(`/api/users?page=${page}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setUsers(response.data.results);
-      setTotalPages(response.data.totalPages);
+      setUsers(response.data.results || []);
+      setTotalPages(response.data.totalPages || 1);
     } catch (err) {
-      console.error('Error fetching users:', err);
+      setUsers([]);
+      setTotalPages(1);
     }
+  }, []);
+
+  const fetchUserData = useCallback(async () => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      const response = await axios.get('/api/users/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUserData(response.data.user);
+    } catch (err) {
+      setUserData(null);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  useEffect(() => {
+    fetchUsers(currentPage);
+  }, [currentPage, fetchUsers]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/');
   };
 
   const handleEdit = (user) => {
@@ -79,14 +139,21 @@ const UserManagement = ({ language, toggleLanguage }) => {
     setEditedUser({});
   };
 
+  const handleInputChange = (field, value) => {
+    setEditedUser((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const handleSaveEdit = async () => {
     const token = localStorage.getItem('token');
 
     const updatedData = {
-      ...(editedUser.firstName && { firstName: editedUser.firstName }),
-      ...(editedUser.lastName && { lastName: editedUser.lastName }),
-      ...(editedUser.email && { email: editedUser.email }),
-      ...(editedUser.roleId && { roleId: parseInt(editedUser.roleId, 10) }),
+      firstName: editedUser.firstName,
+      lastName: editedUser.lastName,
+      email: editedUser.email,
+      roleId: parseInt(editedUser.roleId, 10),
     };
 
     try {
@@ -94,18 +161,17 @@ const UserManagement = ({ language, toggleLanguage }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success(t('common.changesSaved'));
+      alert(t.saveSuccess);
       setEditingUser(null);
+      setEditedUser({});
       fetchUsers(currentPage);
     } catch (err) {
-      console.error('Error saving user data:', err);
-      toast.error(t('common.changesSaveError'));
+      alert(t.saveError);
     }
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(t('common.confirmDeleteUser'));
-
+    const confirmDelete = window.confirm(t.confirmDelete);
     if (!confirmDelete) return;
 
     const token = localStorage.getItem('token');
@@ -115,171 +181,221 @@ const UserManagement = ({ language, toggleLanguage }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success(t('common.userDeleted'));
+      alert(t.deleteSuccess);
       fetchUsers(currentPage);
     } catch (err) {
-      console.error('Error deleting user:', err);
-      toast.error(t('common.userDeleteError'));
+      alert(t.deleteError);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setEditedUser({
-      ...editedUser,
-      [field]: value,
-    });
+  const getRoleBadgeClassName = (roleId) => {
+    if (roleId === 1) {
+      return 'inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700';
+    }
+
+    if (roleId === 2) {
+      return 'inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700';
+    }
+
+    if (roleId === 3) {
+      return 'inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700';
+    }
+
+    return 'inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700';
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Navbar
-        userData={userData}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={links}
-      />
+    <div className="app-shell">
+      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
+        <div className="flex items-center gap-4">
+          <img
+            src="/assets/logo.png"
+            alt="Magazyn Logo"
+            className="w-10 h-10 cursor-pointer"
+            onClick={() => navigate('/dashboard')}
+          />
 
-      <main className="flex-1 p-6 bg-white shadow-md mt-20">
-        <h2 className="text-xl font-bold mb-4">
-          {t('common.users')}
-        </h2>
-
-        {users.length > 0 ? (
-          <>
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border border-gray-300 px-4 py-2">{t('table.id')}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t('common.username')}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t('common.role')}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t('common.firstName')}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t('common.lastName')}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t('common.email')}</th>
-                  <th className="border border-gray-300 px-4 py-2">{t('table.actions')}</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-100">
-                    {editingUser === user.id ? (
-                      <>
-                        <td className="border border-gray-300 px-4 py-2">{user.id}</td>
-                        <td className="border border-gray-300 px-4 py-2">{user.username}</td>
-
-                        <td className="border border-gray-300 px-4 py-2">
-                          <select
-                            value={editedUser.roleId || ''}
-                            onChange={(e) => handleInputChange('roleId', e.target.value)}
-                            className="border px-2 py-1 w-full"
-                          >
-                            {Object.entries(roleMap).map(([key, value]) => (
-                              <option key={key} value={key}>
-                                {value}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="text"
-                            value={editedUser.firstName}
-                            onChange={(e) => handleInputChange('firstName', e.target.value)}
-                            className="border px-2 py-1 w-full"
-                          />
-                        </td>
-
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="text"
-                            value={editedUser.lastName}
-                            onChange={(e) => handleInputChange('lastName', e.target.value)}
-                            className="border px-2 py-1 w-full"
-                          />
-                        </td>
-
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="email"
-                            value={editedUser.email}
-                            onChange={(e) => handleInputChange('email', e.target.value)}
-                            className="border px-2 py-1 w-full"
-                          />
-                        </td>
-
-                        <td className="border border-gray-300 px-4 py-2">
-                          <button
-                            onClick={handleSaveEdit}
-                            className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 mr-2"
-                          >
-                            {t('common.save')}
-                          </button>
-
-                          <button
-                            onClick={handleCancelEdit}
-                            className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                          >
-                            {t('common.cancel')}
-                          </button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="border border-gray-300 px-4 py-2">{user.id}</td>
-                        <td className="border border-gray-300 px-4 py-2">{user.username}</td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          {roleMap[user.role_id] || t('common.noRole')}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">{user.first_name}</td>
-                        <td className="border border-gray-300 px-4 py-2">{user.last_name}</td>
-                        <td className="border border-gray-300 px-4 py-2">{user.email}</td>
-
-                        <td className="border border-gray-300 px-4 py-2">
-                          <button
-                            onClick={() => handleEdit(user)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mr-2"
-                          >
-                            {t('common.edit')}
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                          >
-                            {t('common.delete')}
-                          </button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-between mt-4">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-              >
-                {t('common.previous')}
-              </button>
-
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-              >
-                {t('common.next')}
-              </button>
+          {userData && (
+            <div>
+              <h1 className="text-lg font-bold text-gray-800">
+                {userData.firstName} {userData.lastName}
+              </h1>
+              <p className="text-sm text-gray-600">{userData.role}</p>
             </div>
-          </>
-        ) : (
-          <p className="text-gray-500">
-            {t('common.noData')}
-          </p>
-        )}
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/user-management/register')}
+            className="btn-success"
+          >
+            {t.addUser}
+          </button>
+
+          <button className="btn-muted" onClick={toggleLanguage}>
+            {language === 'pl' ? 'EN' : 'PL'}
+          </button>
+
+          <button onClick={handleLogout} className="btn-danger">
+            {t.logout}
+          </button>
+        </div>
+      </nav>
+
+      <main className="page-content">
+        <section className="page-card">
+          <div className="toolbar">
+            <h2 className="page-title">{t.users}</h2>
+
+            <button
+              onClick={() => navigate('/user-management/register')}
+              className="btn-success"
+            >
+              {t.addUser}
+            </button>
+          </div>
+
+          {users.length > 0 ? (
+            <>
+              <div className="data-table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t.id}</th>
+                      <th>{t.username}</th>
+                      <th>{t.role}</th>
+                      <th>{t.firstName}</th>
+                      <th>{t.lastName}</th>
+                      <th>{t.email}</th>
+                      <th>{t.actions}</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td>#{user.id}</td>
+                        <td>{user.username}</td>
+
+                        <td>
+                          {editingUser === user.id ? (
+                            <select
+                              value={editedUser.roleId || ''}
+                              onChange={(e) => handleInputChange('roleId', e.target.value)}
+                              className="form-input min-w-[180px]"
+                            >
+                              {Object.entries(roleMap).map(([key, value]) => (
+                                <option key={key} value={key}>
+                                  {value}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={getRoleBadgeClassName(user.role_id)}>
+                              {roleMap[user.role_id] || t.noRole}
+                            </span>
+                          )}
+                        </td>
+
+                        <td>
+                          {editingUser === user.id ? (
+                            <input
+                              type="text"
+                              value={editedUser.firstName}
+                              onChange={(e) => handleInputChange('firstName', e.target.value)}
+                              className="form-input min-w-[140px]"
+                            />
+                          ) : (
+                            user.first_name || '-'
+                          )}
+                        </td>
+
+                        <td>
+                          {editingUser === user.id ? (
+                            <input
+                              type="text"
+                              value={editedUser.lastName}
+                              onChange={(e) => handleInputChange('lastName', e.target.value)}
+                              className="form-input min-w-[140px]"
+                            />
+                          ) : (
+                            user.last_name || '-'
+                          )}
+                        </td>
+
+                        <td>
+                          {editingUser === user.id ? (
+                            <input
+                              type="email"
+                              value={editedUser.email}
+                              onChange={(e) => handleInputChange('email', e.target.value)}
+                              className="form-input min-w-[200px]"
+                            />
+                          ) : (
+                            user.email || '-'
+                          )}
+                        </td>
+
+                        <td>
+                          {editingUser === user.id ? (
+                            <div className="flex flex-wrap gap-2">
+                              <button onClick={handleSaveEdit} className="btn-success">
+                                {t.save}
+                              </button>
+                              <button onClick={handleCancelEdit} className="btn-muted">
+                                {t.cancel}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => handleEdit(user)}
+                                className="btn-primary"
+                              >
+                                {t.edit}
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user.id)}
+                                className="btn-danger"
+                              >
+                                {t.delete}
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="toolbar mt-6">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="btn-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t.prev}
+                </button>
+
+                <span className="text-sm font-medium text-gray-600">
+                  {t.page} {currentPage} {t.of} {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="btn-muted disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t.next}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">{t.noData}</div>
+          )}
+        </section>
       </main>
     </div>
   );

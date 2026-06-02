@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { ToastContainer } from 'react-toastify';
@@ -24,42 +24,44 @@ import ProtectedRoute from './components/ProtectedRoute';
 const App = () => {
   const [language, setLanguage] = useState('pl');
 
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.classList.toggle('dark-mode', theme === 'dark');
+  }, [theme]);
+
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === 'pl' ? 'en' : 'pl'));
+  };
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const sharedProps = {
+    language,
+    toggleLanguage,
+    theme,
+    toggleTheme,
   };
 
   return (
     <Router>
       <>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Home
-                language={language}
-                toggleLanguage={toggleLanguage}
-              />
-            }
-          />
+          <Route path="/" element={<Home {...sharedProps} />} />
 
-          <Route
-            path="/about"
-            element={
-              <About
-                language={language}
-                toggleLanguage={toggleLanguage}
-              />
-            }
-          />
+          <Route path="/about" element={<About {...sharedProps} />} />
 
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <Dashboard
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <Dashboard {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -68,10 +70,7 @@ const App = () => {
             path="/user-management"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <UserManagement
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <UserManagement {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -80,10 +79,7 @@ const App = () => {
             path="/user-management/register"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
-                <RegisterUser
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <RegisterUser {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -92,10 +88,7 @@ const App = () => {
             path="/dashboard-md"
             element={
               <ProtectedRoute allowedRoles={['managing director']}>
-                <DashboardMD
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <DashboardMD {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -104,10 +97,7 @@ const App = () => {
             path="/dashboard-worker"
             element={
               <ProtectedRoute allowedRoles={['worker']}>
-                <DashboardWorker
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <DashboardWorker {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -116,10 +106,7 @@ const App = () => {
             path="/locations"
             element={
               <ProtectedRoute allowedRoles={['managing director', 'worker']}>
-                <WarehouseLocations
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <WarehouseLocations {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -128,10 +115,7 @@ const App = () => {
             path="/products"
             element={
               <ProtectedRoute allowedRoles={['managing director', 'worker']}>
-                <Products
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <Products {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -140,10 +124,7 @@ const App = () => {
             path="/products/add"
             element={
               <ProtectedRoute allowedRoles={['managing director']}>
-                <AddProduct
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <AddProduct {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -152,10 +133,7 @@ const App = () => {
             path="/products/update/:id"
             element={
               <ProtectedRoute allowedRoles={['managing director']}>
-                <UpdateProduct
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <UpdateProduct {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -164,10 +142,7 @@ const App = () => {
             path="/orders"
             element={
               <ProtectedRoute allowedRoles={['managing director', 'worker']}>
-                <Orders
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <Orders {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -176,10 +151,7 @@ const App = () => {
             path="/order-history/:orderId"
             element={
               <ProtectedRoute allowedRoles={['managing director', 'worker']}>
-                <OrderHistory
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <OrderHistory {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -188,10 +160,7 @@ const App = () => {
             path="/place-order"
             element={
               <ProtectedRoute allowedRoles={['managing director', 'worker']}>
-                <PlaceOrder
-                  language={language}
-                  toggleLanguage={toggleLanguage}
-                />
+                <PlaceOrder {...sharedProps} />
               </ProtectedRoute>
             }
           />
@@ -204,7 +173,7 @@ const App = () => {
           newestOnTop
           closeOnClick
           pauseOnHover
-          theme="colored"
+          theme={theme === 'dark' ? 'dark' : 'colored'}
         />
       </>
     </Router>
