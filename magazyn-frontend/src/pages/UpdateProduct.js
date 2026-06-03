@@ -14,12 +14,14 @@ const UpdateProduct = ({
 
   const [product, setProduct] = useState(null);
   const [locations, setLocations] = useState([]);
+  const [manufacturers, setManufacturers] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     quantity: '',
     status: '',
     locationId: '',
+    manufacturerId: '',
   });
 
   const translations = {
@@ -30,10 +32,12 @@ const UpdateProduct = ({
       quantity: 'Ilość',
       status: 'Status',
       location: 'Lokalizacja',
+      manufacturer: 'Producent',
       save: 'Zapisz',
       cancel: 'Anuluj',
       selectStatus: 'Wybierz status',
       selectLocation: 'Wybierz lokalizację',
+      selectManufacturer: 'Wybierz producenta',
       available: 'Wolne',
       occupied: 'Zajęte',
       success: 'Produkt został zaktualizowany.',
@@ -47,10 +51,12 @@ const UpdateProduct = ({
       quantity: 'Quantity',
       status: 'Status',
       location: 'Location',
+      manufacturer: 'Manufacturer',
       save: 'Save',
       cancel: 'Cancel',
       selectStatus: 'Select status',
       selectLocation: 'Select location',
+      selectManufacturer: 'Select manufacturer',
       available: 'Available',
       occupied: 'Occupied',
       success: 'Product updated successfully.',
@@ -66,11 +72,14 @@ const UpdateProduct = ({
       const token = localStorage.getItem('token');
 
       try {
-        const [productResponse, locationsResponse] = await Promise.all([
+        const [productResponse, locationsResponse, manufacturersResponse] = await Promise.all([
           axios.get(`/api/products/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           axios.get('/api/warehouse-locations', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get('/api/manufacturers', {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -85,9 +94,11 @@ const UpdateProduct = ({
           quantity: productData.quantity || '',
           status: productData.status || '',
           locationId: productData.location_id || '',
+          manufacturerId: productData.manufacturer_id || '',
         });
 
         setLocations(locationsResponse.data || []);
+        setManufacturers(manufacturersResponse.data || []);
       } catch (err) {
         console.error(err);
       }
@@ -108,8 +119,13 @@ const UpdateProduct = ({
 
     const token = localStorage.getItem('token');
 
+    const payload = {
+      ...formData,
+      manufacturerId: formData.manufacturerId || null,
+    };
+
     try {
-      await axios.put(`/api/products/${id}`, formData, {
+      await axios.put(`/api/products/${id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -174,6 +190,7 @@ const UpdateProduct = ({
               <label className="form-label">{t.quantity}</label>
               <input
                 type="number"
+                min="0"
                 className="form-input"
                 value={formData.quantity}
                 onChange={(e) => handleInputChange('quantity', e.target.value)}
@@ -210,6 +227,25 @@ const UpdateProduct = ({
                 {locations.map((location) => (
                   <option key={location.id} value={location.id}>
                     {location.code}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="form-label">{t.manufacturer}</label>
+              <select
+                className="form-input"
+                value={formData.manufacturerId}
+                onChange={(e) =>
+                  handleInputChange('manufacturerId', e.target.value)
+                }
+              >
+                <option value="">{t.selectManufacturer}</option>
+
+                {manufacturers.map((manufacturer) => (
+                  <option key={manufacturer.id} value={manufacturer.id}>
+                    {manufacturer.name}
                   </option>
                 ))}
               </select>

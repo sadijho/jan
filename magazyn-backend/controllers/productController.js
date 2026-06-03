@@ -2,10 +2,8 @@ const Product = require('../models/product');
 
 // Tworzenie produktu
 exports.createProduct = (req, res) => {
-  const { name, description, quantity, status, locationId } = req.body;
-
-  Product.create({ name, description, quantity, status, locationId }, (err) => {
-    if (err) {
+const { name, description, quantity, status, locationId, manufacturerId } = req.body;
+Product.create({ name, description, quantity, status, locationId, manufacturerId }, (err) => {    if (err) {
       console.error('Błąd podczas dodawania produktu:', err);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
@@ -48,9 +46,7 @@ exports.getProductById = (req, res) => {
 // Aktualizacja produktu
 exports.updateProduct = (req, res) => {
   const { id } = req.params;
-  const { name, description, quantity, status, locationId } = req.body;
-
-  console.log('Dane do aktualizacji w kontrolerze:', { id, name, description, quantity, status, locationId });
+const { name, description, quantity, status, locationId, manufacturerId } = req.body;
 
   if (!locationId) {
     return res
@@ -58,8 +54,7 @@ exports.updateProduct = (req, res) => {
       .json({ message: 'location_id jest wymagane i musi być poprawną wartością.' });
   }
 
-  Product.update(id, { name, description, quantity, status, locationId }, (err) => {
-    if (err) {
+Product.update(id, { name, description, quantity, status, locationId, manufacturerId }, (err) => {    if (err) {
       console.error('Błąd podczas aktualizacji produktu:', err);
       return res.status(500).json({ message: 'Błąd serwera' });
     }

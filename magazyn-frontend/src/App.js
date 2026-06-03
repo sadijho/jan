@@ -18,6 +18,7 @@ import Orders from './pages/Orders';
 import OrderHistory from './pages/OrderHistory';
 import PlaceOrder from './pages/PlaceOrder';
 import DashboardWorker from './pages/DashboardWorker';
+import Manufacturers from './pages/Manufacturers';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -117,6 +118,15 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+  path="/manufacturers"
+  element={
+    <ProtectedRoute allowedRoles={['managing director']}>
+      <Manufacturers {...sharedProps} />
+    </ProtectedRoute>
+  }
+/>
 
           <Route
             path="/products/add"

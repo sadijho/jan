@@ -15,9 +15,11 @@ const AddProduct = ({
     quantity: '',
     status: '',
     locationId: '',
+    manufacturerId: '',
   });
 
   const [locations, setLocations] = useState([]);
+  const [manufacturers, setManufacturers] = useState([]);
   const navigate = useNavigate();
 
   const translations = {
@@ -28,10 +30,12 @@ const AddProduct = ({
       quantity: 'Ilość',
       status: 'Status',
       location: 'Lokalizacja',
+      manufacturer: 'Producent',
       submit: 'Zapisz',
       cancel: 'Anuluj',
       selectStatus: 'Wybierz status',
       selectLocation: 'Wybierz lokalizację',
+      selectManufacturer: 'Wybierz producenta',
       available: 'Wolne',
       occupied: 'Zajęte',
       statusError: 'Status może być tylko "wolne" lub "zajęte".',
@@ -45,10 +49,12 @@ const AddProduct = ({
       quantity: 'Quantity',
       status: 'Status',
       location: 'Location',
+      manufacturer: 'Manufacturer',
       submit: 'Save',
       cancel: 'Cancel',
       selectStatus: 'Select status',
       selectLocation: 'Select location',
+      selectManufacturer: 'Select manufacturer',
       available: 'Available',
       occupied: 'Occupied',
       statusError: 'Status must be either "available" or "occupied".',
@@ -60,21 +66,28 @@ const AddProduct = ({
   const t = translations[language] || translations.pl;
 
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchInitialData = async () => {
       const token = localStorage.getItem('token');
 
       try {
-        const response = await axios.get('/api/warehouse-locations', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [locationsResponse, manufacturersResponse] = await Promise.all([
+          axios.get('/api/warehouse-locations', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get('/api/manufacturers', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        setLocations(response.data || []);
+        setLocations(locationsResponse.data || []);
+        setManufacturers(manufacturersResponse.data || []);
       } catch (err) {
         setLocations([]);
+        setManufacturers([]);
       }
     };
 
-    fetchLocations();
+    fetchInitialData();
   }, []);
 
   const handleInputChange = (field, value) => {
@@ -94,8 +107,13 @@ const AddProduct = ({
 
     const token = localStorage.getItem('token');
 
+    const payload = {
+      ...formData,
+      manufacturerId: formData.manufacturerId || null,
+    };
+
     try {
-      await axios.post('/api/products', formData, {
+      await axios.post('/api/products', payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -182,6 +200,22 @@ const AddProduct = ({
                 {locations.map((location) => (
                   <option key={location.id} value={location.id}>
                     {location.code}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="form-label">{t.manufacturer}</label>
+              <select
+                value={formData.manufacturerId}
+                onChange={(e) => handleInputChange('manufacturerId', e.target.value)}
+                className="form-input"
+              >
+                <option value="">{t.selectManufacturer}</option>
+                {manufacturers.map((manufacturer) => (
+                  <option key={manufacturer.id} value={manufacturer.id}>
+                    {manufacturer.name}
                   </option>
                 ))}
               </select>

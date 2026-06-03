@@ -18,17 +18,40 @@ const Navbar = ({
     navigate('/');
   };
 
-  const handleLogoClick = () => {
-    if (userData?.role === 'admin') {
-      navigate('/dashboard');
-    } else if (userData?.role === 'managing director') {
-      navigate('/dashboard-md');
-    } else if (userData?.role === 'worker') {
-      navigate('/dashboard-worker');
-    } else {
-      navigate('/');
-    }
-  };
+
+const getRoleFromToken = () => {
+  const token = localStorage.getItem('token');
+
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.role || null;
+  } catch (err) {
+    return null;
+  }
+};
+
+const handleLogoClick = () => {
+  const role = userData?.role || getRoleFromToken();
+
+  if (role === 'admin') {
+    navigate('/dashboard');
+    return;
+  }
+
+  if (role === 'managing director') {
+    navigate('/dashboard-md');
+    return;
+  }
+
+  if (role === 'worker') {
+    navigate('/dashboard-worker');
+    return;
+  }
+
+  navigate('/');
+};
 
   return (
     <nav className="navbar">

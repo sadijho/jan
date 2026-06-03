@@ -6,6 +6,7 @@ exports.createProductSchema = Joi.object({
   quantity: Joi.number().integer().min(0).required(),
   status: Joi.string().valid('wolne', 'zajęte').required(),
   locationId: Joi.number().integer().positive().required(),
+  manufacturerId: Joi.number().integer().positive().allow(null, ''),
 });
 
 exports.updateProductSchema = Joi.object({
@@ -14,4 +15,5 @@ exports.updateProductSchema = Joi.object({
   quantity: Joi.number().integer().min(0).required(),
   status: Joi.string().valid('wolne', 'zajęte').required(),
   locationId: Joi.number().integer().positive().required(),
+  manufacturerId: Joi.number().integer().positive().allow(null, ''),
 });

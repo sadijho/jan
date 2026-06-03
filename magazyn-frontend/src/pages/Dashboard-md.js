@@ -40,13 +40,17 @@ const DashboardMD = ({
 
   const l = labels[language] || labels.pl;
 
-  const links = [
-    { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
-    { label: t('common.products'), path: '/products', color: 'bg-blue-500' },
-    { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
-    { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
-  ];
-
+const links = [
+  { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
+  { label: t('common.products'), path: '/products', color: 'bg-blue-500' },
+  {
+    label: language === 'pl' ? 'Producenci' : 'Manufacturers',
+    path: '/manufacturers',
+    color: 'bg-blue-500',
+  },
+  { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
+  { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
+];
   const fetchOrderProducts = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');

@@ -18,6 +18,19 @@ const Products = ({
 
   const t = (key) => translate(language, key);
 
+  const labels = {
+    pl: {
+      manufacturer: 'Producent',
+      noManufacturer: 'Brak producenta',
+    },
+    en: {
+      manufacturer: 'Manufacturer',
+      noManufacturer: 'No manufacturer',
+    },
+  };
+
+  const l = labels[language] || labels.pl;
+
   const links = [
     {
       label: t('common.addProduct'),
@@ -38,10 +51,12 @@ const Products = ({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setProducts(response.data.results);
-      setTotalPages(response.data.totalPages);
+      setProducts(response.data.results || []);
+      setTotalPages(response.data.totalPages || 1);
     } catch (err) {
       console.error('Error fetching products:', err);
+      setProducts([]);
+      setTotalPages(1);
     }
   };
 
@@ -71,14 +86,14 @@ const Products = ({
 
   return (
     <div className="app-shell">
-   <Navbar
-  userData={null}
-  language={language}
-  toggleLanguage={toggleLanguage}
-  theme={theme}
-  toggleTheme={toggleTheme}
-  links={links}
-/>
+      <Navbar
+        userData={null}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        links={links}
+      />
 
       <main className="page-content">
         <div className="page-card">
@@ -104,6 +119,7 @@ const Products = ({
                       <th>{t('table.description')}</th>
                       <th>{t('table.quantity')}</th>
                       <th>{t('table.status')}</th>
+                      <th>{l.manufacturer}</th>
                       <th>{t('table.actions')}</th>
                     </tr>
                   </thead>
@@ -116,7 +132,8 @@ const Products = ({
                         </td>
 
                         <td>{product.name}</td>
-                        <td>{product.description}</td>
+
+                        <td>{product.description || '-'}</td>
 
                         <td>
                           <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
@@ -128,6 +145,10 @@ const Products = ({
                           <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                             {product.status}
                           </span>
+                        </td>
+
+                        <td>
+                          {product.manufacturer_name || l.noManufacturer}
                         </td>
 
                         <td>

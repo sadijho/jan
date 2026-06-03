@@ -2,15 +2,40 @@ const db = require('../config/db');
 
 const Product = {
   create: (data, callback) => {
-    const query = 'INSERT INTO Products (name, description, quantity, status, location_id) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [data.name, data.description, data.quantity, data.status, data.locationId], callback);
+    const query = `
+      INSERT INTO Products
+        (name, description, quantity, status, location_id, manufacturer_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      query,
+      [
+        data.name,
+        data.description,
+        data.quantity,
+        data.status,
+        data.locationId,
+        data.manufacturerId || null,
+      ],
+      callback
+    );
   },
 
   findAllPaginated: (limit, offset, callback) => {
     const query = `
-      SELECT SQL_CALC_FOUND_ROWS * FROM Products
+      SELECT SQL_CALC_FOUND_ROWS
+             p.*,
+             wl.code AS location_code,
+             m.name AS manufacturer_name,
+             m.country AS manufacturer_country
+      FROM Products p
+      LEFT JOIN WarehouseLocations wl ON p.location_id = wl.id
+      LEFT JOIN Manufacturers m ON p.manufacturer_id = m.id
+      ORDER BY p.id DESC
       LIMIT ? OFFSET ?
     `;
+
     db.query(query, [limit, offset], (err, results) => {
       if (err) return callback(err);
 
@@ -24,26 +49,43 @@ const Product = {
   },
 
   findById: (id, callback) => {
-    const query = 'SELECT * FROM Products WHERE id = ?';
-    console.log('Zapytanie SQL do pobrania produktu:', query);
-    db.query(query, [id], (err, results) => {
-      if (err) {
-        console.error('Błąd podczas pobierania produktu:', err);
-      }
-      console.log('Dane produktu z bazy:', results);
-      callback(err, results);
-    });
+    const query = `
+      SELECT p.*,
+             wl.code AS location_code,
+             m.name AS manufacturer_name,
+             m.country AS manufacturer_country
+      FROM Products p
+      LEFT JOIN WarehouseLocations wl ON p.location_id = wl.id
+      LEFT JOIN Manufacturers m ON p.manufacturer_id = m.id
+      WHERE p.id = ?
+    `;
+
+    db.query(query, [id], callback);
   },
 
   update: (id, data, callback) => {
     const query = `
       UPDATE Products
-      SET name = ?, description = ?, quantity = ?, status = ?, location_id = ?
+      SET name = ?,
+          description = ?,
+          quantity = ?,
+          status = ?,
+          location_id = ?,
+          manufacturer_id = ?
       WHERE id = ?
     `;
+
     db.query(
       query,
-      [data.name, data.description, data.quantity, data.status, data.locationId, id],
+      [
+        data.name,
+        data.description,
+        data.quantity,
+        data.status,
+        data.locationId,
+        data.manufacturerId || null,
+        id,
+      ],
       callback
     );
   },
@@ -51,6 +93,10 @@ const Product = {
   delete: (id, callback) => {
     const query = 'DELETE FROM Products WHERE id = ?';
     db.query(query, [id], callback);
+  },
+
+  findCustom: (query, params, callback) => {
+    db.query(query, params, callback);
   },
 };
 

@@ -47,6 +47,9 @@ app.use('/api/users', userRoutes);
 const productRoutes = require('./routes/products');
 app.use('/api/products', productRoutes);
 
+const manufacturerRoutes = require('./routes/manufacturers');
+app.use('/api/manufacturers', manufacturerRoutes);
+
 // Trasy zamówień
 const orderRoutes = require('./routes/orders');
 app.use('/api/orders', orderRoutes);
