@@ -345,3 +345,100 @@ html[data-theme='dark'] .data-table tr:hover {
 html[data-theme='dark'] .btn-muted:hover {
   filter: brightness(1.12);
 }
+
+html[data-theme='dark'] .text-slate-900,
+html[data-theme='dark'] .text-slate-800,
+html[data-theme='dark'] .text-gray-900,
+html[data-theme='dark'] .text-gray-800,
+html[data-theme='dark'] .text-gray-700 {
+  color: var(--text-main) !important;
+}
+
+html[data-theme='dark'] .text-slate-700,
+html[data-theme='dark'] .text-slate-600,
+html[data-theme='dark'] .text-slate-500,
+html[data-theme='dark'] .text-gray-600,
+html[data-theme='dark'] .text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme='dark'] .bg-white,
+html[data-theme='dark'] .bg-slate-50,
+html[data-theme='dark'] .bg-gray-50,
+html[data-theme='dark'] .bg-gray-100 {
+  background-color: var(--bg-card) !important;
+}
+
+html[data-theme='dark'] .border-slate-200,
+html[data-theme='dark'] .border-gray-200,
+html[data-theme='dark'] .border-gray-300 {
+  border-color: var(--border-color) !important;
+}
+
+html[data-theme='dark'] .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+html[data-theme='dark'] .text-blue-700 {
+  color: #93c5fd !important;
+}
+
+html[data-theme='dark'] .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+}
+
+html[data-theme='dark'] .text-green-700 {
+  color: #86efac !important;
+}
+
+html[data-theme='dark'] .bg-yellow-100 {
+  background-color: rgba(234, 179, 8, 0.2) !important;
+}
+
+html[data-theme='dark'] .text-yellow-700 {
+  color: #fde68a !important;
+}
+
+html[data-theme='dark'] .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+html[data-theme='dark'] .text-red-700 {
+  color: #fca5a5 !important;
+}
+
+html[data-theme='dark'] .bg-slate-100,
+html[data-theme='dark'] .bg-gray-100 {
+  background-color: var(--bg-muted) !important;
+}
+
+html[data-theme='dark'] .text-slate-700,
+html[data-theme='dark'] .text-gray-700 {
+  color: var(--text-main) !important;
+}
+
+input[type='date'].form-input {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] input[type='date'].form-input {
+  color-scheme: dark;
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+html[data-theme='dark'] input[type='date'].form-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+html[data-theme='dark'] input[type='date'].form-input::-webkit-datetime-edit,
+html[data-theme='dark'] input[type='date'].form-input::-webkit-datetime-edit-fields-wrapper,
+html[data-theme='dark'] input[type='date'].form-input::-webkit-datetime-edit-text,
+html[data-theme='dark'] input[type='date'].form-input::-webkit-datetime-edit-month-field,
+html[data-theme='dark'] input[type='date'].form-input::-webkit-datetime-edit-day-field,
+html[data-theme='dark'] input[type='date'].form-input::-webkit-datetime-edit-year-field {
+  color: var(--text-main);
+}

@@ -5,7 +5,12 @@ import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 import { translate } from '../i18n/translations';
 
-const PlaceOrder = ({ language, toggleLanguage }) => {
+const PlaceOrder = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [dueDate, setDueDate] = useState('');
@@ -96,12 +101,14 @@ const PlaceOrder = ({ language, toggleLanguage }) => {
 
   return (
     <div className="app-shell">
-      <Navbar
-        userData={null}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={links}
-      />
+     <Navbar
+  userData={null}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  theme={theme}
+  toggleTheme={toggleTheme}
+  links={links}
+/>
 
       <main className="page-content max-w-4xl">
         <div className="page-card">

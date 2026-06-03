@@ -4,7 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { translate } from '../i18n/translations';
 import Navbar from '../components/Navbar';
 
-const Register = ({ language, toggleLanguage }) => {
+const Register = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -55,12 +60,14 @@ const Register = ({ language, toggleLanguage }) => {
 
   return (
     <div className="app-shell">
-      <Navbar
-        userData={null}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={[]}
-      />
+<Navbar
+  userData={null}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  theme={theme}
+  toggleTheme={toggleTheme}
+  links={[]}
+/>
 
       <main className="page-content">
         <section className="page-card max-w-2xl mx-auto">

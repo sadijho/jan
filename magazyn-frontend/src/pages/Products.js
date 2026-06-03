@@ -5,7 +5,12 @@ import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 import { translate } from '../i18n/translations';
 
-const Products = ({ language, toggleLanguage }) => {
+const Products = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -66,12 +71,14 @@ const Products = ({ language, toggleLanguage }) => {
 
   return (
     <div className="app-shell">
-      <Navbar
-        userData={null}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={links}
-      />
+   <Navbar
+  userData={null}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  theme={theme}
+  toggleTheme={toggleTheme}
+  links={links}
+/>
 
       <main className="page-content">
         <div className="page-card">

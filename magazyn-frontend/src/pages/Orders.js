@@ -1,15 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import { toast } from 'react-toastify';
 
-const Orders = ({ language, toggleLanguage }) => {
+const Orders = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [orders, setOrders] = useState([]);
   const [searchId, setSearchId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [userRole, setUserRole] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const navigate = useNavigate();
 
   const translations = {
     pl: {
@@ -24,7 +29,6 @@ const Orders = ({ language, toggleLanguage }) => {
       clear: 'Wyczyść',
       update: 'Zrealizuj',
       viewHistory: 'Historia',
-      logout: 'Wyloguj się',
       noData: 'Brak danych do wyświetlenia.',
       next: 'Dalej',
       previous: 'Wstecz',
@@ -48,7 +52,6 @@ const Orders = ({ language, toggleLanguage }) => {
       clear: 'Clear',
       update: 'Complete',
       viewHistory: 'History',
-      logout: 'Log out',
       noData: 'No data to display.',
       next: 'Next',
       previous: 'Previous',
@@ -63,6 +66,8 @@ const Orders = ({ language, toggleLanguage }) => {
   };
 
   const t = translations[language] || translations.pl;
+
+  const links = [];
 
   const fetchOrders = useCallback(async (page = 1) => {
     const token = localStorage.getItem('token');
@@ -149,7 +154,7 @@ const Orders = ({ language, toggleLanguage }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert(t.statusUpdated);
+      toast.success(t.statusUpdated);
 
       if (isSearching && searchId.trim()) {
         handleSearchById();
@@ -157,23 +162,12 @@ const Orders = ({ language, toggleLanguage }) => {
         fetchOrders(currentPage);
       }
     } catch (err) {
-      alert(t.statusUpdateError);
+toast.error(t.statusUpdateError);
     }
   };
 
   const handleViewHistory = (orderId) => {
-    navigate(`/order-history/${orderId}`);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
-
-  const getDashboardPath = () => {
-    if (userRole === 'managing director') return '/dashboard-md';
-    if (userRole === 'worker') return '/dashboard-worker';
-    return '/dashboard';
+    window.location.href = `/order-history/${orderId}`;
   };
 
   const getStatusLabel = (status) => {
@@ -196,26 +190,14 @@ const Orders = ({ language, toggleLanguage }) => {
 
   return (
     <div className="app-shell">
-      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
-        <div className="flex items-center gap-4">
-          <img
-            src="/assets/logo.png"
-            alt="Magazyn Logo"
-            className="w-10 h-10 cursor-pointer"
-            onClick={() => navigate(getDashboardPath())}
-          />
-          <h1 className="text-lg font-bold text-gray-800">{t.orders}</h1>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button className="btn-muted" onClick={toggleLanguage}>
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-          <button onClick={handleLogout} className="btn-danger">
-            {t.logout}
-          </button>
-        </div>
-      </nav>
+      <Navbar
+        userData={userRole ? { role: userRole } : null}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        links={links}
+      />
 
       <main className="page-content">
         <section className="page-card">

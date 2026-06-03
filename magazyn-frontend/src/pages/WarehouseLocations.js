@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { translate } from '../i18n/translations';
-
-const WarehouseLocations = ({ language, toggleLanguage }) => {
+const WarehouseLocations = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [locations, setLocations] = useState([]);
   const t = (key) => translate(language, key);
   const links = [];
@@ -28,12 +32,14 @@ const WarehouseLocations = ({ language, toggleLanguage }) => {
 
   return (
     <div className="app-shell">
-      <Navbar
-        userData={null}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        links={links}
-      />
+<Navbar
+  userData={null}
+  language={language}
+  toggleLanguage={toggleLanguage}
+  theme={theme}
+  toggleTheme={toggleTheme}
+  links={links}
+/>
 
       <main className="page-content">
         <section className="page-card">

@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 
-const AddProduct = ({ language, toggleLanguage }) => {
+const AddProduct = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -10,6 +16,7 @@ const AddProduct = ({ language, toggleLanguage }) => {
     status: '',
     locationId: '',
   });
+
   const [locations, setLocations] = useState([]);
   const navigate = useNavigate();
 
@@ -23,7 +30,6 @@ const AddProduct = ({ language, toggleLanguage }) => {
       location: 'Lokalizacja',
       submit: 'Zapisz',
       cancel: 'Anuluj',
-      logout: 'Wyloguj się',
       selectStatus: 'Wybierz status',
       selectLocation: 'Wybierz lokalizację',
       available: 'Wolne',
@@ -41,7 +47,6 @@ const AddProduct = ({ language, toggleLanguage }) => {
       location: 'Location',
       submit: 'Save',
       cancel: 'Cancel',
-      logout: 'Log out',
       selectStatus: 'Select status',
       selectLocation: 'Select location',
       available: 'Available',
@@ -101,33 +106,16 @@ const AddProduct = ({ language, toggleLanguage }) => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
-
   return (
     <div className="app-shell">
-      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
-        <div className="flex items-center gap-4">
-          <img
-            src="/assets/logo.png"
-            alt="Magazyn Logo"
-            className="w-10 h-10 cursor-pointer"
-            onClick={() => navigate('/products')}
-          />
-          <h1 className="text-lg font-bold text-gray-800">{t.addProduct}</h1>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button className="btn-muted" onClick={toggleLanguage}>
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-          <button onClick={handleLogout} className="btn-danger">
-            {t.logout}
-          </button>
-        </div>
-      </nav>
+      <Navbar
+        userData={null}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        links={[]}
+      />
 
       <main className="page-content">
         <section className="page-card max-w-2xl mx-auto">

@@ -1,8 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Navbar from '../components/Navbar';
 
-const UserManagement = ({ language, toggleLanguage }) => {
+const UserManagement = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [users, setUsers] = useState([]);
   const [userData, setUserData] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -19,7 +25,6 @@ const UserManagement = ({ language, toggleLanguage }) => {
 
   const translations = {
     pl: {
-      logout: 'Wyloguj się',
       users: 'Użytkownicy',
       id: 'ID',
       username: 'Nazwa użytkownika',
@@ -46,7 +51,6 @@ const UserManagement = ({ language, toggleLanguage }) => {
       saveError: 'Nie udało się zapisać zmian.',
     },
     en: {
-      logout: 'Log out',
       users: 'Users',
       id: 'ID',
       username: 'Username',
@@ -75,6 +79,14 @@ const UserManagement = ({ language, toggleLanguage }) => {
   };
 
   const t = translations[language] || translations.pl;
+
+  const links = [
+    {
+      label: t.addUser,
+      path: '/user-management/register',
+      color: 'bg-green-500',
+    },
+  ];
 
   const fetchUsers = useCallback(async (page) => {
     const token = localStorage.getItem('token');
@@ -118,11 +130,6 @@ const UserManagement = ({ language, toggleLanguage }) => {
   useEffect(() => {
     fetchUsers(currentPage);
   }, [currentPage, fetchUsers]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
 
   const handleEdit = (user) => {
     setEditingUser(user.id);
@@ -206,42 +213,14 @@ const UserManagement = ({ language, toggleLanguage }) => {
 
   return (
     <div className="app-shell">
-      <nav className="bg-beige-200 shadow px-6 py-4 flex justify-between items-center fixed top-0 left-0 w-full z-10">
-        <div className="flex items-center gap-4">
-          <img
-            src="/assets/logo.png"
-            alt="Magazyn Logo"
-            className="w-10 h-10 cursor-pointer"
-            onClick={() => navigate('/dashboard')}
-          />
-
-          {userData && (
-            <div>
-              <h1 className="text-lg font-bold text-gray-800">
-                {userData.firstName} {userData.lastName}
-              </h1>
-              <p className="text-sm text-gray-600">{userData.role}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/user-management/register')}
-            className="btn-success"
-          >
-            {t.addUser}
-          </button>
-
-          <button className="btn-muted" onClick={toggleLanguage}>
-            {language === 'pl' ? 'EN' : 'PL'}
-          </button>
-
-          <button onClick={handleLogout} className="btn-danger">
-            {t.logout}
-          </button>
-        </div>
-      </nav>
+      <Navbar
+        userData={userData}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        links={links}
+      />
 
       <main className="page-content">
         <section className="page-card">

@@ -3,7 +3,12 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { translate } from '../i18n/translations';
 
-const DashboardWorker = ({ language, toggleLanguage }) => {
+const DashboardWorker = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [userData, setUserData] = useState(null);
   const [groupedData, setGroupedData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +89,8 @@ const DashboardWorker = ({ language, toggleLanguage }) => {
         userData={userData}
         language={language}
         toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
         links={links}
       />
 

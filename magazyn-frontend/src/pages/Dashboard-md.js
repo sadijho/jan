@@ -1,16 +1,44 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { translate } from '../i18n/translations';
 
-const DashboardMD = ({ language, toggleLanguage }) => {
+const DashboardMD = ({
+  language,
+  toggleLanguage,
+  theme,
+  toggleTheme,
+}) => {
   const [userData, setUserData] = useState(null);
   const [groupedData, setGroupedData] = useState([]);
   const [showAllOrders, setShowAllOrders] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState('all');
+  const [employeeSort, setEmployeeSort] = useState('az');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const t = (key) => translate(language, key);
+
+  const labels = {
+    pl: {
+      allEmployees: 'Wszyscy pracownicy',
+      employee: 'Pracownik',
+      sortEmployees: 'Sortuj pracowników',
+      az: 'A-Z',
+      za: 'Z-A',
+      unknownEmployee: 'Nieznany pracownik',
+    },
+    en: {
+      allEmployees: 'All employees',
+      employee: 'Employee',
+      sortEmployees: 'Sort employees',
+      az: 'A-Z',
+      za: 'Z-A',
+      unknownEmployee: 'Unknown employee',
+    },
+  };
+
+  const l = labels[language] || labels.pl;
 
   const links = [
     { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
@@ -33,11 +61,21 @@ const DashboardMD = ({ language, toggleLanguage }) => {
       const { results, totalPages } = response.data;
 
       const grouped = results.reduce((acc, item) => {
-        const { order_id, product_name, quantity } = item;
+        const {
+          order_id,
+          product_name,
+          quantity,
+          user_id,
+          first_name,
+          last_name,
+        } = item;
 
         if (!acc[order_id]) {
           acc[order_id] = {
             order_id,
+            user_id,
+            first_name,
+            last_name,
             products: [],
           };
         }
@@ -51,9 +89,11 @@ const DashboardMD = ({ language, toggleLanguage }) => {
       }, {});
 
       setGroupedData(Object.values(grouped));
-      setTotalPages(totalPages);
+      setTotalPages(totalPages || 1);
     } catch (err) {
       console.error('Error fetching order products:', err);
+      setGroupedData([]);
+      setTotalPages(1);
     }
   }, [currentPage, showAllOrders, userData?.id]);
 
@@ -81,12 +121,52 @@ const DashboardMD = ({ language, toggleLanguage }) => {
     }
   }, [fetchOrderProducts, userData]);
 
+  useEffect(() => {
+    setSelectedUserId('all');
+    setCurrentPage(1);
+  }, [showAllOrders]);
+
+  const employees = useMemo(() => {
+    const employeeMap = new Map();
+
+    groupedData.forEach((order) => {
+      if (!order.user_id) return;
+
+      const fullName = `${order.first_name || ''} ${order.last_name || ''}`.trim();
+
+      employeeMap.set(order.user_id, {
+        user_id: order.user_id,
+        name: fullName || l.unknownEmployee,
+      });
+    });
+
+    return Array.from(employeeMap.values()).sort((a, b) => {
+      if (employeeSort === 'za') {
+        return b.name.localeCompare(a.name);
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [groupedData, employeeSort, l.unknownEmployee]);
+
+  const visibleOrders = useMemo(() => {
+    if (selectedUserId === 'all') {
+      return groupedData;
+    }
+
+    return groupedData.filter(
+      (order) => String(order.user_id) === String(selectedUserId)
+    );
+  }, [groupedData, selectedUserId]);
+
   return (
     <div className="app-shell">
       <Navbar
         userData={userData}
         language={language}
         toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
         links={links}
       />
 
@@ -105,7 +185,7 @@ const DashboardMD = ({ language, toggleLanguage }) => {
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => {
                   setShowAllOrders(true);
@@ -128,65 +208,110 @@ const DashboardMD = ({ language, toggleLanguage }) => {
             </div>
           </div>
 
-          {groupedData.length > 0 ? (
-            <>
-              <div className="data-table-wrapper">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>{t('table.orderId')}</th>
-                      <th>{t('table.products')}</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {groupedData.map((order) => (
-                      <tr key={order.order_id}>
-                        <td className="font-semibold text-slate-900">
-                          #{order.order_id}
-                        </td>
-
-                        <td>
-                          <div className="flex flex-wrap gap-2">
-                            {order.products.map((product, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
-                              >
-                                {product.product_name}: {product.quantity}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {showAllOrders && (
+            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="form-label">
+                  {l.employee}
+                </label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="form-input"
+                >
+                  <option value="all">{l.allEmployees}</option>
+                  {employees.map((employee) => (
+                    <option key={employee.user_id} value={employee.user_id}>
+                      {employee.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex justify-between mt-6">
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                  className="btn-muted"
+              <div>
+                <label className="form-label">
+                  {l.sortEmployees}
+                </label>
+                <select
+                  value={employeeSort}
+                  onChange={(e) => setEmployeeSort(e.target.value)}
+                  className="form-input"
                 >
-                  {t('common.previous')}
-                </button>
-
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                  className="btn-muted"
-                >
-                  {t('common.next')}
-                </button>
+                  <option value="az">{l.az}</option>
+                  <option value="za">{l.za}</option>
+                </select>
               </div>
-            </>
-          ) : (
-            <div className="empty-state">
-              {t('common.noData')}
             </div>
           )}
+
+          <div className="mt-6">
+            {visibleOrders.length > 0 ? (
+              <>
+                <div className="data-table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>{t('table.orderId')}</th>
+                        <th>{l.employee}</th>
+                        <th>{t('table.products')}</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {visibleOrders.map((order) => (
+                        <tr key={order.order_id}>
+                          <td className="font-semibold text-slate-900">
+                            #{order.order_id}
+                          </td>
+
+                          <td>
+                            {`${order.first_name || ''} ${order.last_name || ''}`.trim() || '-'}
+                          </td>
+
+                          <td>
+                            <div className="flex flex-wrap gap-2">
+                              {order.products.map((product, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                                >
+                                  {product.product_name}: {product.quantity}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {selectedUserId === 'all' && (
+                  <div className="flex justify-between mt-6">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((prev) => prev - 1)}
+                      className="btn-muted"
+                    >
+                      {t('common.previous')}
+                    </button>
+
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((prev) => prev + 1)}
+                      className="btn-muted"
+                    >
+                      {t('common.next')}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="empty-state">
+                {t('common.noData')}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
