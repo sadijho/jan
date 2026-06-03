@@ -27,7 +27,9 @@ const Orders = ({
       search: 'Szukaj',
       searchPlaceholder: 'Wpisz ID zamówienia...',
       clear: 'Wyczyść',
-      update: 'Zrealizuj',
+      approve: 'Akceptuj',
+      reject: 'Odrzuć',
+      complete: 'Zrealizuj',
       viewHistory: 'Historia',
       noData: 'Brak danych do wyświetlenia.',
       next: 'Dalej',
@@ -36,8 +38,12 @@ const Orders = ({
       of: 'z',
       completed: 'Zrealizowane',
       inProgress: 'W trakcie',
+      pending: 'Oczekuje',
+      rejected: 'Odrzucone',
       unknownStatus: 'Nieznany status',
-      statusUpdated: 'Status zamówienia został zaktualizowany!',
+      approvedSuccess: 'Zamówienie zostało zaakceptowane.',
+      rejectedSuccess: 'Zamówienie zostało odrzucone.',
+      completedSuccess: 'Zamówienie zostało zrealizowane.',
       statusUpdateError: 'Nie udało się zaktualizować statusu zamówienia.',
     },
     en: {
@@ -50,7 +56,9 @@ const Orders = ({
       search: 'Search',
       searchPlaceholder: 'Enter order ID...',
       clear: 'Clear',
-      update: 'Complete',
+      approve: 'Approve',
+      reject: 'Reject',
+      complete: 'Complete',
       viewHistory: 'History',
       noData: 'No data to display.',
       next: 'Next',
@@ -59,8 +67,12 @@ const Orders = ({
       of: 'of',
       completed: 'Completed',
       inProgress: 'In progress',
+      pending: 'Pending',
+      rejected: 'Rejected',
       unknownStatus: 'Unknown status',
-      statusUpdated: 'Order status updated!',
+      approvedSuccess: 'Order has been approved.',
+      rejectedSuccess: 'Order has been rejected.',
+      completedSuccess: 'Order has been completed.',
       statusUpdateError: 'Failed to update order status.',
     },
   };
@@ -144,25 +156,35 @@ const Orders = ({
     fetchOrders(1);
   };
 
-  const handleUpdateStatus = async (orderId) => {
+  const refreshOrdersAfterStatusChange = () => {
+    if (isSearching && searchId.trim()) {
+      handleSearchById();
+    } else {
+      fetchOrders(currentPage);
+    }
+  };
+
+  const handleUpdateStatus = async (orderId, status) => {
     const token = localStorage.getItem('token');
 
     try {
       await axios.put(
         `/api/orders/${orderId}`,
-        { status: 'zrealizowane' },
+        { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success(t.statusUpdated);
-
-      if (isSearching && searchId.trim()) {
-        handleSearchById();
-      } else {
-        fetchOrders(currentPage);
+      if (status === 'w trakcie') {
+        toast.success(t.approvedSuccess);
+      } else if (status === 'odrzucone') {
+        toast.success(t.rejectedSuccess);
+      } else if (status === 'zrealizowane') {
+        toast.success(t.completedSuccess);
       }
+
+      refreshOrdersAfterStatusChange();
     } catch (err) {
-toast.error(t.statusUpdateError);
+      toast.error(err.response?.data?.message || t.statusUpdateError);
     }
   };
 
@@ -173,6 +195,8 @@ toast.error(t.statusUpdateError);
   const getStatusLabel = (status) => {
     if (status === 'zrealizowane') return t.completed;
     if (status === 'w trakcie') return t.inProgress;
+    if (status === 'oczekuje') return t.pending;
+    if (status === 'odrzucone') return t.rejected;
     return status || t.unknownStatus;
   };
 
@@ -185,8 +209,18 @@ toast.error(t.statusUpdateError);
       return 'inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700';
     }
 
+    if (status === 'oczekuje') {
+      return 'inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700';
+    }
+
+    if (status === 'odrzucone') {
+      return 'inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700';
+    }
+
     return 'inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700';
   };
+
+  const canManageOrders = userRole === 'admin' || userRole === 'managing director';
 
   return (
     <div className="app-shell">
@@ -246,35 +280,63 @@ toast.error(t.statusUpdateError);
                     {orders.map((order) => (
                       <tr key={order.order_id}>
                         <td>#{order.order_id}</td>
+
                         <td>
                           <span className={getStatusClassName(order.status)}>
                             {getStatusLabel(order.status)}
                           </span>
                         </td>
+
                         <td>
                           {order.due_date
                             ? new Date(order.due_date).toLocaleDateString()
                             : '-'}
                         </td>
+
                         <td>
                           {order.first_name || order.last_name
                             ? `${order.first_name || ''} ${order.last_name || ''}`.trim()
                             : '-'}
                         </td>
+
                         <td>
                           <div className="flex flex-wrap gap-2">
-                            {order.status !== 'zrealizowane' && (
+                            {canManageOrders && order.status === 'oczekuje' && (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    handleUpdateStatus(order.order_id, 'w trakcie')
+                                  }
+                                  className="btn-success"
+                                >
+                                  {t.approve}
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    handleUpdateStatus(order.order_id, 'odrzucone')
+                                  }
+                                  className="btn-danger"
+                                >
+                                  {t.reject}
+                                </button>
+                              </>
+                            )}
+
+                            {canManageOrders && order.status === 'w trakcie' && (
                               <button
-                                onClick={() => handleUpdateStatus(order.order_id)}
+                                onClick={() =>
+                                  handleUpdateStatus(order.order_id, 'zrealizowane')
+                                }
                                 className="btn-primary"
                               >
-                                {t.update}
+                                {t.complete}
                               </button>
                             )}
 
                             <button
                               onClick={() => handleViewHistory(order.order_id)}
-                              className="btn-success"
+                              className="btn-muted"
                             >
                               {t.viewHistory}
                             </button>
@@ -302,7 +364,9 @@ toast.error(t.statusUpdateError);
 
                   <button
                     disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     className="btn-muted disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t.next}

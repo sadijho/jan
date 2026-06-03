@@ -23,6 +23,15 @@ router.get(
   orderController.getOrders
 );
 
+// Liczba oczekujących wniosków
+router.get(
+  '/pending-count',
+  verifyToken,
+  verifyRole(['managing director', 'admin']),
+  orderController.getPendingOrdersCount
+);
+
+// Pobieranie szczegółów zamówienia
 router.get(
   '/:id',
   verifyToken,
@@ -34,7 +43,7 @@ router.get(
 router.put(
   '/:id',
   verifyToken,
-  verifyRole(['worker', 'managing director', 'admin']),
+  verifyRole(['managing director', 'admin']),
   validate(updateOrderStatusSchema),
   orderController.updateOrderStatus
 );
@@ -43,10 +52,8 @@ router.put(
 router.get(
   '/:id/history',
   verifyToken,
-  verifyRole(['managing director', 'admin','worker']),
+  verifyRole(['managing director', 'admin', 'worker']),
   orderController.getOrderHistory
 );
-
-
 
 module.exports = router;

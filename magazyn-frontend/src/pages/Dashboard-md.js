@@ -14,6 +14,7 @@ const DashboardMD = ({
   const [showAllOrders, setShowAllOrders] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState('all');
   const [employeeSort, setEmployeeSort] = useState('az');
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -27,6 +28,8 @@ const DashboardMD = ({
       az: 'A-Z',
       za: 'Z-A',
       unknownEmployee: 'Nieznany pracownik',
+      manufacturers: 'Producenci',
+      reports: 'Raporty',
     },
     en: {
       allEmployees: 'All employees',
@@ -35,27 +38,50 @@ const DashboardMD = ({
       az: 'A-Z',
       za: 'Z-A',
       unknownEmployee: 'Unknown employee',
+      manufacturers: 'Manufacturers',
+      reports: 'Reports',
     },
   };
 
   const l = labels[language] || labels.pl;
 
-const links = [
-  { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
-  { label: t('common.products'), path: '/products', color: 'bg-blue-500' },
-  {
-    label: language === 'pl' ? 'Producenci' : 'Manufacturers',
-    path: '/manufacturers',
-    color: 'bg-blue-500',
-  },
-  {
-  label: language === 'pl' ? 'Raporty' : 'Reports',
-  path: '/reports',
-  color: 'bg-purple-500',
-},
-  { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
-  { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
-];
+  const links = [
+    { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
+    { label: t('common.products'), path: '/products', color: 'bg-blue-500' },
+    {
+      label: l.manufacturers,
+      path: '/manufacturers',
+      color: 'bg-blue-500',
+    },
+    {
+      label: l.reports,
+      path: '/reports',
+      color: 'bg-purple-500',
+    },
+    {
+      label: pendingOrdersCount > 0
+        ? `${t('common.statuses')} (${pendingOrdersCount})`
+        : t('common.statuses'),
+      path: '/orders',
+      color: pendingOrdersCount > 0 ? 'bg-red-500' : 'bg-blue-500',
+    },
+    { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
+  ];
+
+  const fetchPendingOrdersCount = useCallback(async () => {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.get('/api/orders/pending-count', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setPendingOrdersCount(response.data.count || 0);
+    } catch (err) {
+      setPendingOrdersCount(0);
+    }
+  }, []);
+
   const fetchOrderProducts = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -69,7 +95,7 @@ const links = [
 
       const { results, totalPages } = response.data;
 
-      const grouped = results.reduce((acc, item) => {
+      const grouped = (results || []).reduce((acc, item) => {
         const {
           order_id,
           product_name,
@@ -122,7 +148,8 @@ const links = [
     };
 
     fetchUserData();
-  }, []);
+    fetchPendingOrdersCount();
+  }, [fetchPendingOrdersCount]);
 
   useEffect(() => {
     if (userData) {
@@ -217,12 +244,21 @@ const links = [
             </div>
           </div>
 
+          {pendingOrdersCount > 0 && (
+            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {language === 'pl'
+                ? `Masz ${pendingOrdersCount} oczekujące wnioski zamówień do akceptacji.`
+                : `You have ${pendingOrdersCount} pending order requests to approve.`}
+            </div>
+          )}
+
           {showAllOrders && (
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="form-label">
                   {l.employee}
                 </label>
+
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
@@ -241,6 +277,7 @@ const links = [
                 <label className="form-label">
                   {l.sortEmployees}
                 </label>
+
                 <select
                   value={employeeSort}
                   onChange={(e) => setEmployeeSort(e.target.value)}
