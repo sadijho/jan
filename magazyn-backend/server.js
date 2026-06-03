@@ -50,6 +50,10 @@ app.use('/api/products', productRoutes);
 const manufacturerRoutes = require('./routes/manufacturers');
 app.use('/api/manufacturers', manufacturerRoutes);
 
+// Trasy raportów
+const reportRoutes = require('./routes/reports');
+app.use('/api/reports', reportRoutes);
+
 // Trasy zamówień
 const orderRoutes = require('./routes/orders');
 app.use('/api/orders', orderRoutes);

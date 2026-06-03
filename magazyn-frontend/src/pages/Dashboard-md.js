@@ -48,6 +48,11 @@ const links = [
     path: '/manufacturers',
     color: 'bg-blue-500',
   },
+  {
+  label: language === 'pl' ? 'Raporty' : 'Reports',
+  path: '/reports',
+  color: 'bg-purple-500',
+},
   { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
   { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
 ];

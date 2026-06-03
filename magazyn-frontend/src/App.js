@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Reports from './pages/Reports';
 
 import Home from './pages/Home';
 import About from './pages/About';
@@ -124,6 +125,16 @@ const App = () => {
   element={
     <ProtectedRoute allowedRoles={['managing director']}>
       <Manufacturers {...sharedProps} />
+    </ProtectedRoute>
+  }
+/>
+
+
+<Route
+  path="/reports"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'managing director']}>
+      <Reports {...sharedProps} />
     </ProtectedRoute>
   }
 />

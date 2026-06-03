@@ -91,6 +91,7 @@ passwordLabel: 'Hasło:',
 invalidCredentials: 'Nieprawidłowy login lub hasło.',
 aboutDescription: 'Nasza aplikacja do zarządzania magazynem to nowoczesne rozwiązanie wspomagające organizację i kontrolę procesów magazynowych. Zapewniamy prostotę obsługi, szybkość działania oraz przejrzystość informacji, aby pomóc w efektywnym zarządzaniu Twoimi zasobami.',
 backToHome: 'Powrót na stronę główną',
+exportPdf: 'Eksport PDF',
     },
 
     roles: {
@@ -204,6 +205,7 @@ passwordLabel: 'Password:',
 invalidCredentials: 'Invalid username or password.',
 aboutDescription: 'Our warehouse management application is a modern solution designed to support the organization and control of warehouse processes. We ensure ease of use, speed, and transparency to help you efficiently manage your resources.',
 backToHome: 'Back to Home',
+exportPdf: 'Export PDF',
     },
 
     roles: {
