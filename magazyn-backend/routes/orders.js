@@ -31,11 +31,19 @@ router.get(
   orderController.getPendingOrdersCount
 );
 
+// Zamówienia przypisane do zalogowanego pracownika technicznego
+router.get(
+  '/assigned-to-me',
+  verifyToken,
+  verifyRole(['technical worker']),
+  orderController.getAssignedTechnicalOrders
+);
+
 // Pobieranie szczegółów zamówienia
 router.get(
   '/:id',
   verifyToken,
-  verifyRole(['worker', 'managing director', 'admin']),
+  verifyRole(['worker', 'managing director', 'admin', 'technical worker']),
   orderController.getOrderById
 );
 

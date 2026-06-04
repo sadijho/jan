@@ -105,9 +105,10 @@ const Register = ({
                 onChange={(e) => handleInputChange('roleName', e.target.value)}
                 className="form-input"
               >
-                <option value="worker">Worker</option>
-                <option value="managing director">Managing Director</option>
-                <option value="admin">Admin</option>
+<option value="worker">Worker</option>
+<option value="managing director">Managing Director</option>
+<option value="technical worker">Technical Worker</option>
+<option value="admin">Admin</option>
               </select>
             </div>
 

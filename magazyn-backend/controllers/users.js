@@ -2,18 +2,20 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Role = require('../models/role');
+const db = require('../config/db');
 
 // Rejestracja użytkownika
 exports.register = (req, res) => {
   const { username, password, roleName, firstName, lastName, email } = req.body;
 
-console.log('Otrzymano żądanie rejestracji użytkownika:', {
-  username,
-  roleName,
-  firstName,
-  lastName,
-  email,
-});
+  console.log('Otrzymano żądanie rejestracji użytkownika:', {
+    username,
+    roleName,
+    firstName,
+    lastName,
+    email,
+  });
+
   if (!username || !password || !roleName) {
     return res.status(400).json({ message: 'Nazwa użytkownika, hasło i rola są wymagane' });
   }
@@ -29,12 +31,10 @@ console.log('Otrzymano żądanie rejestracji użytkownika:', {
 
     const roleId = roleResults[0].id;
 
-    bcrypt.hash(password, 10, (err, hash) => {
-      if (err) {
+    bcrypt.hash(password, 10, (hashErr, hash) => {
+      if (hashErr) {
         return res.status(500).json({ message: 'Błąd podczas hashowania hasła' });
       }
-
-
 
       User.create(
         {
@@ -45,13 +45,15 @@ console.log('Otrzymano żądanie rejestracji użytkownika:', {
           lastName: lastName?.trim() || null,
           email: email?.trim() || null,
         },
-        (err) => {
-          if (err) {
-            if (err.code === 'ER_DUP_ENTRY') {
+        (createErr) => {
+          if (createErr) {
+            if (createErr.code === 'ER_DUP_ENTRY') {
               return res.status(409).json({ message: 'Nazwa użytkownika lub email już istnieje' });
             }
+
             return res.status(500).json({ message: 'Błąd podczas tworzenia użytkownika' });
           }
+
           res.status(201).json({ message: 'Użytkownik został zarejestrowany' });
         }
       );
@@ -74,13 +76,13 @@ exports.login = (req, res) => {
 
     const user = userResults[0];
 
-    bcrypt.compare(password, user.password_hash, (err, isMatch) => {
-      if (err || !isMatch) {
+    bcrypt.compare(password, user.password_hash, (compareErr, isMatch) => {
+      if (compareErr || !isMatch) {
         return res.status(401).json({ message: 'Nieprawidłowe hasło' });
       }
 
-      Role.findById(user.role_id, (err, roleResults) => {
-        if (err || roleResults.length === 0) {
+      Role.findById(user.role_id, (roleErr, roleResults) => {
+        if (roleErr || roleResults.length === 0) {
           return res.status(500).json({ message: 'Błąd podczas pobierania roli użytkownika' });
         }
 
@@ -105,17 +107,15 @@ exports.login = (req, res) => {
   });
 };
 
-// Profil użytkownika (z tokenu)
-exports.getProfile = (req, res) => {
+// Profil użytkownika z tokenu
 exports.getProfile = (req, res) => {
   res.status(200).json({ user: req.user });
-};  res.status(200).json({ user: req.user });
 };
 
 // Lista użytkowników z paginacją
 exports.getUsersWithPagination = (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
   const offset = (page - 1) * limit;
 
   User.findAllPaginated(limit, offset, (err, results, totalCount) => {
@@ -126,6 +126,26 @@ exports.getUsersWithPagination = (req, res) => {
 
     const totalPages = Math.ceil(totalCount / limit);
     res.status(200).json({ results, totalPages, currentPage: page });
+  });
+};
+
+// Lista pracowników technicznych
+exports.getTechnicalWorkers = (req, res) => {
+  const query = `
+    SELECT u.id, u.username, u.first_name, u.last_name, u.email
+    FROM Users u
+    JOIN Roles r ON u.role_id = r.id
+    WHERE r.name = ?
+    ORDER BY u.last_name, u.first_name, u.username
+  `;
+
+  db.query(query, ['technical worker'], (err, results) => {
+    if (err) {
+      console.error('Błąd podczas pobierania pracowników technicznych:', err);
+      return res.status(500).json({ message: 'Błąd serwera' });
+    }
+
+    res.status(200).json(results);
   });
 };
 
@@ -142,6 +162,7 @@ exports.getUserById = (req, res) => {
     if (results.length === 0) {
       return res.status(404).json({ message: 'Użytkownik nie został znaleziony' });
     }
+
     res.status(200).json(results[0]);
   });
 };
@@ -151,9 +172,6 @@ exports.updateUser = (req, res) => {
   const { id } = req.params;
   const { firstName, lastName, email, roleId } = req.body;
 
-  console.log('Dane wejściowe do aktualizacji:', { id, firstName, lastName, email, roleId });
-
-  // Walidacja danych wejściowych
   if (!id) {
     return res.status(400).json({ message: 'Brak ID użytkownika w żądaniu' });
   }
@@ -162,24 +180,22 @@ exports.updateUser = (req, res) => {
     return res.status(400).json({ message: 'Nieprawidłowe roleId: musi być liczbą i istnieć w tabeli roles' });
   }
 
-  // Sprawdzenie istnienia roli w tabeli `roles`
   Role.findById(roleId, (err, roleResults) => {
     if (err || roleResults.length === 0) {
       return res.status(400).json({ message: 'Nieprawidłowy roleId: brak takiej roli w systemie.' });
     }
 
-    // Przygotowanie zapytania SQL do aktualizacji użytkownika
     User.updateById(
       id,
-      { 
-        firstName: firstName?.trim() || null, 
-        lastName: lastName?.trim() || null, 
-        email: email?.trim() || null, 
-        roleId 
+      {
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+        email: email?.trim() || null,
+        roleId,
       },
-      (err) => {
-        if (err) {
-          console.error('Błąd podczas aktualizacji użytkownika:', err);
+      (updateErr) => {
+        if (updateErr) {
+          console.error('Błąd podczas aktualizacji użytkownika:', updateErr);
           return res.status(500).json({ message: 'Błąd serwera podczas aktualizacji użytkownika' });
         }
 
@@ -188,7 +204,6 @@ exports.updateUser = (req, res) => {
     );
   });
 };
-
 
 // Usuwanie użytkownika
 exports.deleteUser = (req, res) => {
@@ -199,6 +214,7 @@ exports.deleteUser = (req, res) => {
       console.error('Błąd podczas usuwania użytkownika:', err);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
+
     res.status(200).json({ message: 'Użytkownik został usunięty' });
   });
 };

@@ -19,9 +19,19 @@ const getInitialOrderStatus = (role) => {
   return ORDER_STATUS.IN_PROGRESS;
 };
 
-const validateOrderPayload = (products, dueDate) => {
+const validateOrderPayload = (products, dueDate, assignedTechnicalUserId, note) => {
   if (!dueDate) {
     return 'Termin realizacji jest wymagany';
+  }
+
+  const technicalUserId = Number(assignedTechnicalUserId);
+
+  if (!Number.isInteger(technicalUserId) || technicalUserId <= 0) {
+    return 'Pracownik techniczny jest wymagany';
+  }
+
+  if (note && String(note).length > 1000) {
+    return 'Notatka może mieć maksymalnie 1000 znaków';
   }
 
   if (!Array.isArray(products) || products.length === 0) {
@@ -102,13 +112,38 @@ const updateProductsStock = (connection, products, operation, callback) => {
   processNextProduct();
 };
 
+const verifyTechnicalWorker = (connection, assignedTechnicalUserId, callback) => {
+  connection.query(
+    `
+      SELECT u.id
+      FROM Users u
+      JOIN Roles r ON u.role_id = r.id
+      WHERE u.id = ? AND r.name = ?
+    `,
+    [Number(assignedTechnicalUserId), 'technical worker'],
+    (err, results) => {
+      if (err) return callback(err);
+      if (results.length === 0) {
+        return callback(new Error('Wybrany użytkownik nie jest pracownikiem technicznym'));
+      }
+
+      callback(null);
+    }
+  );
+};
+
 exports.createOrder = (req, res) => {
-  const { products, dueDate } = req.body;
+  const { products, dueDate, assignedTechnicalUserId, note } = req.body;
   const userId = req.user.id;
   const userRole = req.user.role;
   const initialStatus = getInitialOrderStatus(userRole);
 
-  const validationError = validateOrderPayload(products, dueDate);
+  const validationError = validateOrderPayload(
+    products,
+    dueDate,
+    assignedTechnicalUserId,
+    note
+  );
 
   if (validationError) {
     return res.status(400).json({ message: validationError });
@@ -118,6 +153,8 @@ exports.createOrder = (req, res) => {
     productId: Number(product.productId),
     quantity: Number(product.quantity),
   }));
+
+  const normalizedNote = note?.trim() || null;
 
   db.getConnection((err, connection) => {
     if (err) {
@@ -132,118 +169,138 @@ exports.createOrder = (req, res) => {
         return res.status(500).json({ message: 'Błąd serwera' });
       }
 
-      connection.query(
-        'INSERT INTO Orders (user_id, status, due_date) VALUES (?, ?, ?)',
-        [userId, initialStatus, dueDate],
-        (orderErr, orderResult) => {
-          if (orderErr) {
-            return connection.rollback(() => {
-              connection.release();
-              console.error('Błąd tworzenia zamówienia:', orderErr);
-              res.status(500).json({ message: 'Błąd podczas tworzenia zamówienia' });
-            });
-          }
+      verifyTechnicalWorker(connection, assignedTechnicalUserId, (technicalErr) => {
+        if (technicalErr) {
+          return connection.rollback(() => {
+            connection.release();
+            console.error('Błąd sprawdzania pracownika technicznego:', technicalErr);
+            res.status(400).json({ message: technicalErr.message });
+          });
+        }
 
-          const orderId = orderResult.insertId;
-          let index = 0;
-
-          const processNextProduct = () => {
-            if (index >= normalizedProducts.length) {
-              if (initialStatus === ORDER_STATUS.PENDING) {
-                return connection.commit((commitErr) => {
-                  if (commitErr) {
-                    return connection.rollback(() => {
-                      connection.release();
-                      console.error('Błąd zatwierdzania transakcji:', commitErr);
-                      res.status(500).json({ message: 'Błąd podczas zatwierdzania zamówienia' });
-                    });
-                  }
-
-                  connection.release();
-                  return res.status(201).json({
-                    message: 'Prośba o zamówienie została wysłana do akceptacji',
-                    orderId,
-                    status: initialStatus,
-                  });
-                });
-              }
-
-              return updateProductsStock(connection, normalizedProducts, 'decrease', (stockErr) => {
-                if (stockErr) {
-                  return connection.rollback(() => {
-                    connection.release();
-                    console.error('Błąd aktualizacji stanu magazynowego:', stockErr);
-                    res.status(400).json({ message: stockErr.message });
-                  });
-                }
-
-                return connection.commit((commitErr) => {
-                  if (commitErr) {
-                    return connection.rollback(() => {
-                      connection.release();
-                      console.error('Błąd zatwierdzania transakcji:', commitErr);
-                      res.status(500).json({ message: 'Błąd podczas zatwierdzania zamówienia' });
-                    });
-                  }
-
-                  connection.release();
-                  return res.status(201).json({
-                    message: 'Zamówienie zostało złożone i produkty zostały dodane',
-                    orderId,
-                    status: initialStatus,
-                  });
-                });
+        connection.query(
+          `
+            INSERT INTO Orders
+              (user_id, status, due_date, assigned_technical_user_id, note)
+            VALUES (?, ?, ?, ?, ?)
+          `,
+          [
+            userId,
+            initialStatus,
+            dueDate,
+            Number(assignedTechnicalUserId),
+            normalizedNote,
+          ],
+          (orderErr, orderResult) => {
+            if (orderErr) {
+              return connection.rollback(() => {
+                connection.release();
+                console.error('Błąd tworzenia zamówienia:', orderErr);
+                res.status(500).json({ message: 'Błąd podczas tworzenia zamówienia' });
               });
             }
 
-            const product = normalizedProducts[index];
+            const orderId = orderResult.insertId;
+            let index = 0;
 
-            connection.query(
-              'SELECT id FROM Products WHERE id = ?',
-              [product.productId],
-              (productErr, productResults) => {
-                if (productErr) {
-                  return connection.rollback(() => {
-                    connection.release();
-                    console.error('Błąd pobierania produktu:', productErr);
-                    res.status(500).json({ message: 'Błąd podczas pobierania produktu' });
-                  });
-                }
+            const processNextProduct = () => {
+              if (index >= normalizedProducts.length) {
+                if (initialStatus === ORDER_STATUS.PENDING) {
+                  return connection.commit((commitErr) => {
+                    if (commitErr) {
+                      return connection.rollback(() => {
+                        connection.release();
+                        console.error('Błąd zatwierdzania transakcji:', commitErr);
+                        res.status(500).json({ message: 'Błąd podczas zatwierdzania zamówienia' });
+                      });
+                    }
 
-                if (productResults.length === 0) {
-                  return connection.rollback(() => {
                     connection.release();
-                    res.status(404).json({
-                      message: `Produkt ID ${product.productId} nie został znaleziony`,
+                    return res.status(201).json({
+                      message: 'Prośba o zamówienie została wysłana do akceptacji',
+                      orderId,
+                      status: initialStatus,
                     });
                   });
                 }
 
-                connection.query(
-                  'INSERT INTO OrderProducts (order_id, product_id, quantity) VALUES (?, ?, ?)',
-                  [orderId, product.productId, product.quantity],
-                  (orderProductErr) => {
-                    if (orderProductErr) {
+                return updateProductsStock(connection, normalizedProducts, 'decrease', (stockErr) => {
+                  if (stockErr) {
+                    return connection.rollback(() => {
+                      connection.release();
+                      console.error('Błąd aktualizacji stanu magazynowego:', stockErr);
+                      res.status(400).json({ message: stockErr.message });
+                    });
+                  }
+
+                  return connection.commit((commitErr) => {
+                    if (commitErr) {
                       return connection.rollback(() => {
                         connection.release();
-                        console.error('Błąd dodawania produktu do zamówienia:', orderProductErr);
-                        res.status(500).json({
-                          message: 'Błąd podczas dodawania produktu do zamówienia',
-                        });
+                        console.error('Błąd zatwierdzania transakcji:', commitErr);
+                        res.status(500).json({ message: 'Błąd podczas zatwierdzania zamówienia' });
                       });
                     }
 
-                    index += 1;
-                    processNextProduct();
-                  }
-                );
+                    connection.release();
+                    return res.status(201).json({
+                      message: 'Zamówienie zostało złożone i produkty zostały dodane',
+                      orderId,
+                      status: initialStatus,
+                    });
+                  });
+                });
               }
-            );
-          };
 
-          processNextProduct();
-        }
-      );
+              const product = normalizedProducts[index];
+
+              connection.query(
+                'SELECT id FROM Products WHERE id = ?',
+                [product.productId],
+                (productErr, productResults) => {
+                  if (productErr) {
+                    return connection.rollback(() => {
+                      connection.release();
+                      console.error('Błąd pobierania produktu:', productErr);
+                      res.status(500).json({ message: 'Błąd podczas pobierania produktu' });
+                    });
+                  }
+
+                  if (productResults.length === 0) {
+                    return connection.rollback(() => {
+                      connection.release();
+                      res.status(404).json({
+                        message: `Produkt ID ${product.productId} nie został znaleziony`,
+                      });
+                    });
+                  }
+
+                  connection.query(
+                    'INSERT INTO OrderProducts (order_id, product_id, quantity) VALUES (?, ?, ?)',
+                    [orderId, product.productId, product.quantity],
+                    (orderProductErr) => {
+                      if (orderProductErr) {
+                        return connection.rollback(() => {
+                          connection.release();
+                          console.error('Błąd dodawania produktu do zamówienia:', orderProductErr);
+                          res.status(500).json({
+                            message: 'Błąd podczas dodawania produktu do zamówienia',
+                          });
+                        });
+                      }
+
+                      index += 1;
+                      processNextProduct();
+                    }
+                  );
+                }
+              );
+            };
+
+            processNextProduct();
+          }
+        );
+      });
     });
   });
 };
@@ -259,11 +316,17 @@ exports.getOrders = (req, res) => {
     SELECT o.id AS order_id,
            o.status,
            o.due_date,
+           o.note,
+           o.assigned_technical_user_id,
+           tech.first_name AS technical_first_name,
+           tech.last_name AS technical_last_name,
+           tech.username AS technical_username,
            u.first_name,
            u.last_name,
            u.id AS user_id
     FROM Orders o
     JOIN Users u ON o.user_id = u.id
+    LEFT JOIN Users tech ON o.assigned_technical_user_id = tech.id
   `;
 
   const queryParams = [];
@@ -307,6 +370,53 @@ exports.getOrders = (req, res) => {
   });
 };
 
+exports.getAssignedTechnicalOrders = (req, res) => {
+  const userId = req.user.id;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const offset = (page - 1) * limit;
+
+  const query = `
+    SELECT o.id AS order_id,
+           o.status,
+           o.due_date,
+           o.note,
+           u.first_name,
+           u.last_name,
+           u.id AS user_id
+    FROM Orders o
+    JOIN Users u ON o.user_id = u.id
+    WHERE o.assigned_technical_user_id = ?
+    ORDER BY o.id DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  Order.findCustom(query, [userId, limit, offset], (err, results) => {
+    if (err) {
+      console.error('Błąd podczas pobierania przypisanych zamówień:', err);
+      return res.status(500).json({ message: 'Błąd serwera' });
+    }
+
+    const countQuery = `
+      SELECT COUNT(*) AS totalCount
+      FROM Orders
+      WHERE assigned_technical_user_id = ?
+    `;
+
+    Order.findCustom(countQuery, [userId], (countErr, countResults) => {
+      if (countErr) {
+        console.error('Błąd podczas liczenia przypisanych zamówień:', countErr);
+        return res.status(500).json({ message: 'Błąd serwera' });
+      }
+
+      const totalCount = countResults[0].totalCount;
+      const totalPages = Math.ceil(totalCount / limit);
+
+      res.status(200).json({ results, totalPages, currentPage: page });
+    });
+  });
+};
+
 exports.getOrderById = (req, res) => {
   const { id } = req.params;
 
@@ -314,11 +424,17 @@ exports.getOrderById = (req, res) => {
     SELECT o.id AS order_id,
            o.status,
            o.due_date,
+           o.note,
+           o.assigned_technical_user_id,
+           tech.first_name AS technical_first_name,
+           tech.last_name AS technical_last_name,
+           tech.username AS technical_username,
            u.first_name,
            u.last_name,
            u.id AS user_id
     FROM Orders o
     JOIN Users u ON o.user_id = u.id
+    LEFT JOIN Users tech ON o.assigned_technical_user_id = tech.id
     WHERE o.id = ?
   `;
 
@@ -335,10 +451,32 @@ exports.getOrderById = (req, res) => {
     const order = orderResults[0];
 
     if (req.user.role === 'worker' && order.user_id !== req.user.id) {
-  return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
-}
+      return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
+    }
 
-    OrderProducts.findByOrderId(id, (productsErr, products) => {
+    if (
+      req.user.role === 'technical worker' &&
+      order.assigned_technical_user_id !== req.user.id
+    ) {
+      return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
+    }
+
+    const productsQuery = `
+      SELECT op.product_id,
+             op.quantity,
+             p.name AS product_name,
+             p.description AS product_description,
+             wl.code AS location_code,
+             wl.description AS location_description,
+             m.name AS manufacturer_name
+      FROM OrderProducts op
+      JOIN Products p ON op.product_id = p.id
+      LEFT JOIN WarehouseLocations wl ON p.location_id = wl.id
+      LEFT JOIN Manufacturers m ON p.manufacturer_id = m.id
+      WHERE op.order_id = ?
+    `;
+
+    Order.findCustom(productsQuery, [id], (productsErr, products) => {
       if (productsErr) {
         console.error('Błąd podczas pobierania produktów zamówienia:', productsErr);
         return res.status(500).json({ message: 'Błąd serwera' });
@@ -390,8 +528,8 @@ exports.updateOrderStatus = (req, res) => {
 
     const order = orderResults[0];
 
-    if (userRole === 'worker') {
-      return res.status(403).json({ message: 'Pracownik nie może zmieniać statusu zamówienia' });
+    if (userRole === 'worker' || userRole === 'technical worker') {
+      return res.status(403).json({ message: 'Nie masz uprawnień do zmiany statusu zamówienia' });
     }
 
     if (order.status === ORDER_STATUS.REJECTED || order.status === ORDER_STATUS.COMPLETED) {

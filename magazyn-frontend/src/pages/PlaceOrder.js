@@ -12,8 +12,11 @@ const PlaceOrder = ({
   toggleTheme,
 }) => {
   const [products, setProducts] = useState([]);
+  const [technicalWorkers, setTechnicalWorkers] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [dueDate, setDueDate] = useState('');
+  const [assignedTechnicalUserId, setAssignedTechnicalUserId] = useState('');
+  const [note, setNote] = useState('');
   const [userRole, setUserRole] = useState('');
 
   const navigate = useNavigate();
@@ -21,9 +24,9 @@ const PlaceOrder = ({
   const links = [];
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
+    const fetchProducts = async () => {
       try {
         const response = await axios.get('/api/products', {
           headers: { Authorization: `Bearer ${token}` },
@@ -36,9 +39,20 @@ const PlaceOrder = ({
       }
     };
 
-    const fetchUserRole = async () => {
-      const token = localStorage.getItem('token');
+    const fetchTechnicalWorkers = async () => {
+      try {
+        const response = await axios.get('/api/users/technical-workers', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
+        setTechnicalWorkers(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        console.error('Error fetching technical workers:', err);
+        setTechnicalWorkers([]);
+      }
+    };
+
+    const fetchUserRole = async () => {
       try {
         const response = await axios.get('/api/users/profile', {
           headers: { Authorization: `Bearer ${token}` },
@@ -51,6 +65,7 @@ const PlaceOrder = ({
     };
 
     fetchProducts();
+    fetchTechnicalWorkers();
     fetchUserRole();
   }, []);
 
@@ -76,35 +91,73 @@ const PlaceOrder = ({
     setSelectedProducts(updatedProducts);
   };
 
-if (!dueDate) {
-  alert(t('common.selectDueDate'));
-  return;
-}
+  const handleSubmitOrder = async () => {
+    if (!dueDate) {
+      toast.error(t('common.selectDueDate'));
+      return;
+    }
 
-if (selectedProducts.length === 0) {
-  alert(t('common.addAtLeastOneProduct'));
-  return;
-}
+    if (!assignedTechnicalUserId) {
+      toast.error(t('common.selectTechnicalWorker'));
+      return;
+    }
 
-const hasInvalidProduct = selectedProducts.some(
-  (product) => !product.productId || !product.quantity || Number(product.quantity) <= 0
-);
+    if (selectedProducts.length === 0) {
+      toast.error(t('common.addAtLeastOneProduct'));
+      return;
+    }
 
-if (hasInvalidProduct) {
-  alert(t('common.completeProductData'));
-  return;
-}
+    const hasInvalidProduct = selectedProducts.some(
+      (product) =>
+        !product.productId ||
+        !product.quantity ||
+        Number(product.quantity) <= 0
+    );
+
+    if (hasInvalidProduct) {
+      toast.error(t('common.completeProductData'));
+      return;
+    }
+
+    if (note.length > 1000) {
+      toast.error(t('common.noteTooLong'));
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    try {
+      await axios.post(
+        '/api/orders',
+        {
+          products: selectedProducts,
+          dueDate,
+          assignedTechnicalUserId,
+          note,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      toast.success(t('common.orderPlaced'));
+      navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker');
+    } catch (err) {
+      console.error('Error placing order:', err);
+      toast.error(err.response?.data?.message || t('common.orderPlaceError'));
+    }
+  };
 
   return (
     <div className="app-shell">
-     <Navbar
-  userData={null}
-  language={language}
-  toggleLanguage={toggleLanguage}
-  theme={theme}
-  toggleTheme={toggleTheme}
-  links={links}
-/>
+      <Navbar
+        userData={null}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        links={links}
+      />
 
       <main className="page-content max-w-4xl">
         <div className="page-card">
@@ -206,6 +259,49 @@ if (hasInvalidProduct) {
               onChange={(e) => setDueDate(e.target.value)}
               className="form-input"
             />
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+            <label className="form-label">
+              {t('common.technicalWorker')}
+            </label>
+
+            <select
+              value={assignedTechnicalUserId}
+              onChange={(e) => setAssignedTechnicalUserId(e.target.value)}
+              className="form-input"
+            >
+              <option value="">
+                {t('common.selectTechnicalWorker')}
+              </option>
+
+              {technicalWorkers.map((worker) => (
+                <option
+                  key={worker.id}
+                  value={worker.id}
+                >
+                  {worker.first_name || ''} {worker.last_name || ''} ({worker.username})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+            <label className="form-label">
+              {t('common.orderNote')}
+            </label>
+
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="form-input min-h-[120px]"
+              maxLength={1000}
+              placeholder={t('common.orderNotePlaceholder')}
+            />
+
+            <p className="mt-2 text-xs text-slate-500">
+              {note.length}/1000
+            </p>
           </div>
 
           <div className="mt-6 flex justify-end gap-3">

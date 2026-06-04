@@ -10,7 +10,18 @@ exports.createOrderSchema = Joi.object({
     )
     .min(1)
     .required(),
+
   dueDate: Joi.date().required(),
+
+  assignedTechnicalUserId: Joi.number()
+    .integer()
+    .positive()
+    .required(),
+
+  note: Joi.string()
+    .trim()
+    .max(1000)
+    .allow('', null),
 });
 
 exports.updateOrderStatusSchema = Joi.object({

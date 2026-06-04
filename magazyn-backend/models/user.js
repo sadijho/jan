@@ -1,62 +1,44 @@
-const db = require('../config/db');
+const express = require('express');
+const router = express.Router();
+const userController = require('../controllers/users');
+const verifyToken = require('../middleware/authMiddleware');
+const verifyRole = require('../middleware/roleMiddleware');
+const validate = require('../middleware/validate');
+const { registerSchema, loginSchema } = require('../validators/userValidator');
 
-const User = {
-  create: (data, callback) => {
-    const query = `
-      INSERT INTO Users (username, password_hash, role_id, first_name, last_name, email)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    db.query(
-      query,
-      [data.username, data.passwordHash, data.roleId, data.firstName, data.lastName, data.email],
-      callback
-    );
-  },
+// Rejestracja użytkownika — tylko admin
+router.post(
+  '/register',
+  verifyToken,
+  verifyRole(['admin']),
+  validate(registerSchema),
+  userController.register
+);
 
-  findAllPaginated: (limit, offset, callback) => {
-    const query = `
-      SELECT SQL_CALC_FOUND_ROWS * FROM Users
-      LIMIT ? OFFSET ?
-    `;
-    db.query(query, [limit, offset], (err, results) => {
-      if (err) return callback(err);
+// Logowanie
+router.post('/login', validate(loginSchema), userController.login);
 
-      db.query('SELECT FOUND_ROWS() AS totalCount', (err, countResults) => {
-        if (err) return callback(err);
+// Profil użytkownika
+router.get('/profile', verifyToken, userController.getProfile);
 
-        const totalCount = countResults[0].totalCount;
-        callback(null, results, totalCount);
-      });
-    });
-  },
+// Lista użytkowników z paginacją
+router.get('/', verifyToken, verifyRole(['admin']), userController.getUsersWithPagination);
 
-  findByUsername: (username, callback) => {
-    const query = 'SELECT * FROM Users WHERE username = ?';
-    db.query(query, [username], callback);
-  },
+// Lista pracowników technicznych
+router.get(
+  '/technical-workers',
+  verifyToken,
+  verifyRole(['worker', 'managing director', 'admin']),
+  userController.getTechnicalWorkers
+);
 
-  findById: (id, callback) => {
-    const query = 'SELECT * FROM Users WHERE id = ?';
-    db.query(query, [id], callback);
-  },
+// Szczegóły użytkownika
+router.get('/:id', verifyToken, verifyRole(['admin']), userController.getUserById);
 
-  updateById: (id, data, callback) => {
-    const query = `
-      UPDATE Users
-      SET first_name = ?, last_name = ?, email = ?, role_id = ?
-      WHERE id = ?
-    `;
-    db.query(
-      query,
-      [data.firstName, data.lastName, data.email, data.roleId, id],
-      callback
-    );
-  },
+// Aktualizacja użytkownika
+router.put('/:id', verifyToken, verifyRole(['admin']), userController.updateUser);
 
-  deleteById: (id, callback) => {
-    const query = 'DELETE FROM Users WHERE id = ?';
-    db.query(query, [id], callback);
-  },
-};
+// Usuwanie użytkownika
+router.delete('/:id', verifyToken, verifyRole(['admin']), userController.deleteUser);
 
-module.exports = User;
+module.exports = router;

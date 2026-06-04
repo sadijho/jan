@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import RegisterUser from './pages/RegisterUser';
 import DashboardMD from './pages/Dashboard-md';
+import DashboardTechnical from './pages/DashboardTechnical';
 import WarehouseLocations from './pages/WarehouseLocations';
 import Products from './pages/Products';
 import UpdateProduct from './pages/UpdateProduct';
@@ -20,6 +21,7 @@ import OrderHistory from './pages/OrderHistory';
 import PlaceOrder from './pages/PlaceOrder';
 import DashboardWorker from './pages/DashboardWorker';
 import Manufacturers from './pages/Manufacturers';
+import OrderDetails from './pages/OrderDetails';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -102,6 +104,15 @@ const App = () => {
             }
           />
 
+                    <Route
+            path="/dashboard-technical"
+            element={
+              <ProtectedRoute allowedRoles={['technical worker']}>
+                <DashboardTechnical {...sharedProps} />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/locations"
             element={
@@ -161,6 +172,15 @@ const App = () => {
             element={
               <ProtectedRoute allowedRoles={['managing director', 'worker']}>
                 <Orders {...sharedProps} />
+              </ProtectedRoute>
+            }
+          />
+
+                    <Route
+            path="/orders/:orderId"
+            element={
+              <ProtectedRoute allowedRoles={['worker', 'managing director', 'admin', 'technical worker']}>
+                <OrderDetails {...sharedProps} />
               </ProtectedRoute>
             }
           />

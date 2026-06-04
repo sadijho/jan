@@ -26,15 +26,17 @@ const Login = ({ language }) => {
       const decodedToken = jwtDecode(token);
       const userRole = decodedToken.role;
 
-      if (userRole === 'admin') {
-        window.location.href = '/dashboard';
-      } else if (userRole === 'managing director') {
-        window.location.href = '/dashboard-md';
-      } else if (userRole === 'worker') {
-        window.location.href = '/dashboard-worker';
-      } else {
-        window.location.href = '/';
-      }
+    if (userRole === 'admin') {
+  window.location.href = '/dashboard';
+} else if (userRole === 'managing director') {
+  window.location.href = '/dashboard-md';
+} else if (userRole === 'worker') {
+  window.location.href = '/dashboard-worker';
+} else if (userRole === 'technical worker') {
+  window.location.href = '/dashboard-technical';
+} else {
+  window.location.href = '/';
+}
     } catch (err) {
       setError(t('common.invalidCredentials'));
     }

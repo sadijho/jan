@@ -6,6 +6,7 @@ const getDashboardPathByRole = (role) => {
   if (role === 'admin') return '/dashboard';
   if (role === 'managing director') return '/dashboard-md';
   if (role === 'worker') return '/dashboard-worker';
+  if (role === 'technical worker') return '/dashboard-technical';
 
   return '/';
 };
