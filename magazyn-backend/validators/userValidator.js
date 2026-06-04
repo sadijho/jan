@@ -10,7 +10,10 @@ const registerSchema = Joi.object({
     'string.empty': 'Hasło jest wymagane.',
     'string.min': 'Hasło musi mieć co najmniej 8 znaków.',
   }),
-  roleName: Joi.string().valid('worker', 'managing director', 'admin').required().messages({
+roleName: Joi.string()
+  .valid('worker', 'managing director', 'technical worker', 'admin')
+  .required()
+  .messages({
     'string.empty': 'Rola użytkownika jest wymagana.',
     'any.only': 'Nieprawidłowa rola użytkownika.',
   }),
