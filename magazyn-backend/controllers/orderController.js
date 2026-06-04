@@ -334,6 +334,10 @@ exports.getOrderById = (req, res) => {
 
     const order = orderResults[0];
 
+    if (req.user.role === 'worker' && order.user_id !== req.user.id) {
+  return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
+}
+
     OrderProducts.findByOrderId(id, (productsErr, products) => {
       if (productsErr) {
         console.error('Błąd podczas pobierania produktów zamówienia:', productsErr);
