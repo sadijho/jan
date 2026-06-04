@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
+import Navbar from '../components/Navbar';
 
 const Orders = ({
   language,
@@ -23,6 +23,7 @@ const Orders = ({
       status: 'Status',
       dueDate: 'Termin realizacji',
       orderedBy: 'Złożone przez',
+      products: 'Produkty',
       actions: 'Akcje',
       search: 'Szukaj',
       searchPlaceholder: 'Wpisz ID zamówienia...',
@@ -52,6 +53,7 @@ const Orders = ({
       status: 'Status',
       dueDate: 'Due date',
       orderedBy: 'Ordered by',
+      products: 'Products',
       actions: 'Actions',
       search: 'Search',
       searchPlaceholder: 'Enter order ID...',
@@ -79,8 +81,6 @@ const Orders = ({
 
   const t = translations[language] || translations.pl;
 
-  const links = [];
-
   const fetchOrders = useCallback(async (page = 1) => {
     const token = localStorage.getItem('token');
 
@@ -89,10 +89,33 @@ const Orders = ({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setOrders(response.data.results || []);
+      const basicOrders = response.data.results || [];
+
+      const ordersWithProducts = await Promise.all(
+        basicOrders.map(async (order) => {
+          try {
+            const detailsResponse = await axios.get(`/api/orders/${order.order_id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            return {
+              ...order,
+              products: detailsResponse.data.products || [],
+            };
+          } catch (err) {
+            return {
+              ...order,
+              products: [],
+            };
+          }
+        })
+      );
+
+      setOrders(ordersWithProducts);
       setTotalPages(response.data.totalPages || 1);
     } catch (err) {
       setOrders([]);
+      setTotalPages(1);
     }
   }, []);
 
@@ -137,7 +160,12 @@ const Orders = ({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setOrders([response.data]);
+      setOrders([
+        {
+          ...response.data,
+          products: response.data.products || [],
+        },
+      ]);
       setTotalPages(1);
       setCurrentPage(1);
       setIsSearching(true);
@@ -192,28 +220,49 @@ const Orders = ({
     window.location.href = `/order-history/${orderId}`;
   };
 
+  const normalizeStatus = (status) => {
+    return String(status || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
+  const isPendingStatus = (status) => {
+    return ['oczekuje', 'oczekujace', 'pending'].includes(normalizeStatus(status));
+  };
+
+  const isInProgressStatus = (status) => {
+    return normalizeStatus(status) === 'w trakcie';
+  };
+
   const getStatusLabel = (status) => {
-    if (status === 'zrealizowane') return t.completed;
-    if (status === 'w trakcie') return t.inProgress;
-    if (status === 'oczekuje') return t.pending;
-    if (status === 'odrzucone') return t.rejected;
+    const normalizedStatus = normalizeStatus(status);
+
+    if (normalizedStatus === 'zrealizowane') return t.completed;
+    if (normalizedStatus === 'w trakcie') return t.inProgress;
+    if (['oczekuje', 'oczekujace', 'pending'].includes(normalizedStatus)) return t.pending;
+    if (['odrzucone', 'rejected'].includes(normalizedStatus)) return t.rejected;
+
     return status || t.unknownStatus;
   };
 
   const getStatusClassName = (status) => {
-    if (status === 'zrealizowane') {
+    const normalizedStatus = normalizeStatus(status);
+
+    if (normalizedStatus === 'zrealizowane') {
       return 'inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700';
     }
 
-    if (status === 'w trakcie') {
+    if (normalizedStatus === 'w trakcie') {
       return 'inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700';
     }
 
-    if (status === 'oczekuje') {
+    if (['oczekuje', 'oczekujace', 'pending'].includes(normalizedStatus)) {
       return 'inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700';
     }
 
-    if (status === 'odrzucone') {
+    if (['odrzucone', 'rejected'].includes(normalizedStatus)) {
       return 'inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700';
     }
 
@@ -230,7 +279,7 @@ const Orders = ({
         toggleLanguage={toggleLanguage}
         theme={theme}
         toggleTheme={toggleTheme}
-        links={links}
+        links={[]}
       />
 
       <main className="page-content">
@@ -250,12 +299,20 @@ const Orders = ({
                 className="form-input min-w-[240px]"
               />
 
-              <button onClick={handleSearchById} className="btn-primary">
+              <button
+                type="button"
+                onClick={handleSearchById}
+                className="btn-primary"
+              >
                 {t.search}
               </button>
 
               {isSearching && (
-                <button onClick={handleClearSearch} className="btn-muted">
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="btn-muted"
+                >
                   {t.clear}
                 </button>
               )}
@@ -272,6 +329,7 @@ const Orders = ({
                       <th>{t.status}</th>
                       <th>{t.dueDate}</th>
                       <th>{t.orderedBy}</th>
+                      <th>{t.products}</th>
                       <th>{t.actions}</th>
                     </tr>
                   </thead>
@@ -300,10 +358,28 @@ const Orders = ({
                         </td>
 
                         <td>
+                          {order.products && order.products.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {order.products.map((product) => (
+                                <span
+                                  key={`${order.order_id}-${product.product_id}`}
+                                  className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                                >
+                                  {product.product_name}: {product.quantity}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+
+                        <td>
                           <div className="flex flex-wrap gap-2">
-                            {canManageOrders && order.status === 'oczekuje' && (
+                            {canManageOrders && isPendingStatus(order.status) && (
                               <>
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     handleUpdateStatus(order.order_id, 'w trakcie')
                                   }
@@ -313,6 +389,7 @@ const Orders = ({
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     handleUpdateStatus(order.order_id, 'odrzucone')
                                   }
@@ -323,8 +400,9 @@ const Orders = ({
                               </>
                             )}
 
-                            {canManageOrders && order.status === 'w trakcie' && (
+                            {canManageOrders && isInProgressStatus(order.status) && (
                               <button
+                                type="button"
                                 onClick={() =>
                                   handleUpdateStatus(order.order_id, 'zrealizowane')
                                 }
@@ -335,6 +413,7 @@ const Orders = ({
                             )}
 
                             <button
+                              type="button"
                               onClick={() => handleViewHistory(order.order_id)}
                               className="btn-muted"
                             >
@@ -351,6 +430,7 @@ const Orders = ({
               {!isSearching && (
                 <div className="toolbar mt-6">
                   <button
+                    type="button"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     className="btn-muted disabled:opacity-50 disabled:cursor-not-allowed"
@@ -363,6 +443,7 @@ const Orders = ({
                   </span>
 
                   <button
+                    type="button"
                     disabled={currentPage === totalPages}
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(prev + 1, totalPages))
