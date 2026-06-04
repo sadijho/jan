@@ -7,8 +7,13 @@ const Role = require('../models/role');
 exports.register = (req, res) => {
   const { username, password, roleName, firstName, lastName, email } = req.body;
 
-  console.log('Otrzymane dane podczas rejestracji:', { username, password, roleName, firstName, lastName, email });
-
+console.log('Otrzymano żądanie rejestracji użytkownika:', {
+  username,
+  roleName,
+  firstName,
+  lastName,
+  email,
+});
   if (!username || !password || !roleName) {
     return res.status(400).json({ message: 'Nazwa użytkownika, hasło i rola są wymagane' });
   }
@@ -29,7 +34,6 @@ exports.register = (req, res) => {
         return res.status(500).json({ message: 'Błąd podczas hashowania hasła' });
       }
 
-      console.log('Otrzymane dane w backendzie:', req.body);
 
 
       User.create(
@@ -103,8 +107,9 @@ exports.login = (req, res) => {
 
 // Profil użytkownika (z tokenu)
 exports.getProfile = (req, res) => {
-  console.log('Token użytkownika w /profile:', req.user);
+exports.getProfile = (req, res) => {
   res.status(200).json({ user: req.user });
+};  res.status(200).json({ user: req.user });
 };
 
 // Lista użytkowników z paginacją

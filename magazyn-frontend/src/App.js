@@ -121,23 +121,22 @@ const App = () => {
           />
 
           <Route
-  path="/manufacturers"
-  element={
-    <ProtectedRoute allowedRoles={['managing director']}>
-      <Manufacturers {...sharedProps} />
-    </ProtectedRoute>
-  }
-/>
+            path="/manufacturers"
+            element={
+              <ProtectedRoute allowedRoles={['managing director']}>
+                <Manufacturers {...sharedProps} />
+              </ProtectedRoute>
+            }
+          />
 
-
-<Route
-  path="/reports"
-  element={
-    <ProtectedRoute allowedRoles={['admin', 'managing director']}>
-      <Reports {...sharedProps} />
-    </ProtectedRoute>
-  }
-/>
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'managing director']}>
+                <Reports {...sharedProps} />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/products/add"

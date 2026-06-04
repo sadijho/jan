@@ -16,10 +16,11 @@ const DashboardWorker = ({
 
   const t = (key) => translate(language, key);
 
-  const links = [
-    { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
-    { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
-  ];
+const links = [
+  { label: t('common.placeOrder'), path: '/place-order', color: 'bg-green-500' },
+  { label: t('common.statuses'), path: '/orders', color: 'bg-blue-500' },
+  { label: t('common.locations'), path: '/locations', color: 'bg-blue-500' },
+];
 
   const fetchOrders = useCallback(async () => {
     const token = localStorage.getItem('token');

@@ -6,8 +6,14 @@ const verifyRole = require('../middleware/roleMiddleware');
 const validate = require('../middleware/validate');
 const { registerSchema, loginSchema } = require('../validators/userValidator');
 
-// Rejestracja
-router.post('/register', validate(registerSchema), userController.register);
+// Rejestracja użytkownika — tylko admin
+router.post(
+  '/register',
+  verifyToken,
+  verifyRole(['admin']),
+  validate(registerSchema),
+  userController.register
+);
 
 // Logowanie
 router.post('/login', validate(loginSchema), userController.login);

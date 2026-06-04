@@ -15,7 +15,7 @@ const {
 router.get(
   '/',
   verifyToken,
-  verifyRole(['managing director', 'admin']),
+  verifyRole(['worker', 'managing director', 'admin']),
   warehouseController.getWarehouseLocations
 );
 
@@ -23,7 +23,7 @@ router.get(
 router.get(
   '/:id',
   verifyToken,
-  verifyRole(['managing director', 'admin']),
+  verifyRole(['worker', 'managing director', 'admin']),
   warehouseController.getWarehouseLocationById
 );
 
