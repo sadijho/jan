@@ -1,44 +1,96 @@
-const express = require('express');
-const router = express.Router();
-const userController = require('../controllers/users');
-const verifyToken = require('../middleware/authMiddleware');
-const verifyRole = require('../middleware/roleMiddleware');
-const validate = require('../middleware/validate');
-const { registerSchema, loginSchema } = require('../validators/userValidator');
+const db = require('../config/db');
 
-// Rejestracja użytkownika — tylko admin
-router.post(
-  '/register',
-  verifyToken,
-  verifyRole(['admin']),
-  validate(registerSchema),
-  userController.register
-);
+const User = {
+  create: (data, callback) => {
+    const query = `
+      INSERT INTO Users
+        (username, password_hash, role_id, first_name, last_name, email)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
 
-// Logowanie
-router.post('/login', validate(loginSchema), userController.login);
+    db.query(
+      query,
+      [
+        data.username,
+        data.passwordHash,
+        data.roleId,
+        data.firstName,
+        data.lastName,
+        data.email,
+      ],
+      callback
+    );
+  },
 
-// Profil użytkownika
-router.get('/profile', verifyToken, userController.getProfile);
+  findAllPaginated: (limit, offset, callback) => {
+    const query = `
+      SELECT SQL_CALC_FOUND_ROWS
+        id,
+        username,
+        role_id,
+        first_name,
+        last_name,
+        email
+      FROM Users
+      LIMIT ? OFFSET ?
+    `;
 
-// Lista użytkowników z paginacją
-router.get('/', verifyToken, verifyRole(['admin']), userController.getUsersWithPagination);
+    db.query(query, [limit, offset], (err, results) => {
+      if (err) return callback(err);
 
-// Lista pracowników technicznych
-router.get(
-  '/technical-workers',
-  verifyToken,
-  verifyRole(['worker', 'managing director', 'admin']),
-  userController.getTechnicalWorkers
-);
+      db.query('SELECT FOUND_ROWS() AS totalCount', (countErr, countResults) => {
+        if (countErr) return callback(countErr);
 
-// Szczegóły użytkownika
-router.get('/:id', verifyToken, verifyRole(['admin']), userController.getUserById);
+        callback(null, results, countResults[0].totalCount);
+      });
+    });
+  },
 
-// Aktualizacja użytkownika
-router.put('/:id', verifyToken, verifyRole(['admin']), userController.updateUser);
+  findByUsername: (username, callback) => {
+    const query = 'SELECT * FROM Users WHERE username = ?';
+    db.query(query, [username], callback);
+  },
 
-// Usuwanie użytkownika
-router.delete('/:id', verifyToken, verifyRole(['admin']), userController.deleteUser);
+  findById: (id, callback) => {
+    const query = `
+      SELECT
+        id,
+        username,
+        role_id,
+        first_name,
+        last_name,
+        email
+      FROM Users
+      WHERE id = ?
+    `;
 
-module.exports = router;
+    db.query(query, [id], callback);
+  },
+
+  updateById: (id, data, callback) => {
+    const query = `
+      UPDATE Users
+      SET first_name = ?, last_name = ?, email = ?, role_id = ?
+      WHERE id = ?
+    `;
+
+    db.query(
+      query,
+      [
+        data.firstName,
+        data.lastName,
+        data.email,
+        data.roleId,
+        id,
+      ],
+      callback
+    );
+  },
+
+  deleteById: (id, callback) => {
+    const query = 'DELETE FROM Users WHERE id = ?';
+    db.query(query, [id], callback);
+  },
+};
+
+module.exports = User;
