@@ -21,8 +21,16 @@ router.post('/login', validate(loginSchema), userController.login);
 // Profil użytkownika
 router.get('/profile', verifyToken, userController.getProfile);
 
-// Lista użytkowników (z paginacją)
+// Lista użytkowników z paginacją
 router.get('/', verifyToken, verifyRole(['admin']), userController.getUsersWithPagination);
+
+// Lista pracowników technicznych
+router.get(
+  '/technical-workers',
+  verifyToken,
+  verifyRole(['worker', 'managing director', 'admin']),
+  userController.getTechnicalWorkers
+);
 
 // Szczegóły użytkownika
 router.get('/:id', verifyToken, verifyRole(['admin']), userController.getUserById);
