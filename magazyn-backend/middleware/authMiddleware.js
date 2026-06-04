@@ -12,8 +12,8 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    console.error('Błąd weryfikacji tokenu:', error);
-    res.status(403).json({ message: 'Nieprawidłowy lub wygasły token' });
+    return res.status(403).json({ message: 'Nieprawidłowy lub wygasły token' });
   }
 };
+
 module.exports = verifyToken;
