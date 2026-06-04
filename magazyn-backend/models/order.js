@@ -2,8 +2,23 @@ const db = require('../config/db');
 
 const Order = {
   create: (data, callback) => {
-    const query = 'INSERT INTO Orders (user_id, status, due_date) VALUES (?, ?, ?)';
-    db.query(query, [data.userId, 'w trakcie', data.dueDate], callback);
+    const query = `
+      INSERT INTO Orders
+        (user_id, status, due_date, assigned_technical_user_id, note)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      query,
+      [
+        data.userId,
+        data.status,
+        data.dueDate,
+        data.assignedTechnicalUserId || null,
+        data.note || null,
+      ],
+      callback
+    );
   },
 
   findAll: (callback) => {
@@ -12,7 +27,18 @@ const Order = {
   },
 
   findById: (id, callback) => {
-    const query = 'SELECT * FROM Orders WHERE id = ?';
+    const query = `
+      SELECT
+        id,
+        user_id,
+        status,
+        due_date,
+        assigned_technical_user_id,
+        note
+      FROM Orders
+      WHERE id = ?
+    `;
+
     db.query(query, [id], callback);
   },
 

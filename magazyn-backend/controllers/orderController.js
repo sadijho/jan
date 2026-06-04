@@ -123,6 +123,7 @@ const verifyTechnicalWorker = (connection, assignedTechnicalUserId, callback) =>
     [Number(assignedTechnicalUserId), 'technical worker'],
     (err, results) => {
       if (err) return callback(err);
+
       if (results.length === 0) {
         return callback(new Error('Wybrany użytkownik nie jest pracownikiem technicznym'));
       }
@@ -371,7 +372,7 @@ exports.getOrders = (req, res) => {
 };
 
 exports.getAssignedTechnicalOrders = (req, res) => {
-  const userId = req.user.id;
+  const userId = Number(req.user.id);
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
   const offset = (page - 1) * limit;
@@ -387,11 +388,12 @@ exports.getAssignedTechnicalOrders = (req, res) => {
     FROM Orders o
     JOIN Users u ON o.user_id = u.id
     WHERE o.assigned_technical_user_id = ?
+      AND o.status != ?
     ORDER BY o.id DESC
     LIMIT ? OFFSET ?
   `;
 
-  Order.findCustom(query, [userId, limit, offset], (err, results) => {
+  Order.findCustom(query, [userId, ORDER_STATUS.REJECTED, limit, offset], (err, results) => {
     if (err) {
       console.error('Błąd podczas pobierania przypisanych zamówień:', err);
       return res.status(500).json({ message: 'Błąd serwera' });
@@ -401,9 +403,10 @@ exports.getAssignedTechnicalOrders = (req, res) => {
       SELECT COUNT(*) AS totalCount
       FROM Orders
       WHERE assigned_technical_user_id = ?
+        AND status != ?
     `;
 
-    Order.findCustom(countQuery, [userId], (countErr, countResults) => {
+    Order.findCustom(countQuery, [userId, ORDER_STATUS.REJECTED], (countErr, countResults) => {
       if (countErr) {
         console.error('Błąd podczas liczenia przypisanych zamówień:', countErr);
         return res.status(500).json({ message: 'Błąd serwera' });
@@ -450,13 +453,13 @@ exports.getOrderById = (req, res) => {
 
     const order = orderResults[0];
 
-    if (req.user.role === 'worker' && order.user_id !== req.user.id) {
+    if (req.user.role === 'worker' && Number(order.user_id) !== Number(req.user.id)) {
       return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
     }
 
     if (
       req.user.role === 'technical worker' &&
-      order.assigned_technical_user_id !== req.user.id
+      Number(order.assigned_technical_user_id) !== Number(req.user.id)
     ) {
       return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
     }
@@ -466,13 +469,10 @@ exports.getOrderById = (req, res) => {
              op.quantity,
              p.name AS product_name,
              p.description AS product_description,
-             wl.code AS location_code,
-             wl.description AS location_description,
-             m.name AS manufacturer_name
+             p.location_id,
+             p.manufacturer_id
       FROM OrderProducts op
       JOIN Products p ON op.product_id = p.id
-      LEFT JOIN WarehouseLocations wl ON p.location_id = wl.id
-      LEFT JOIN Manufacturers m ON p.manufacturer_id = m.id
       WHERE op.order_id = ?
     `;
 
