@@ -2,14 +2,9 @@ const db = require('../config/db');
 
 const Role = {
   findByName: (name, callback) => {
-    const query = 'SELECT * FROM roles WHERE name = ?';
-    db.query(query, [name], (err, results) => {
-      console.log('Zapytanie SQL do ról:', query, name); // Logowanie zapytania
-      console.log('Wyniki:', results); // Logowanie wyników
-      callback(err, results);
-    });
+    const query = 'SELECT * FROM Roles WHERE name = ?';
+    db.query(query, [name], callback);
   },
-
 
   findById: (id, callback) => {
     const query = 'SELECT * FROM Roles WHERE id = ?';
@@ -17,7 +12,7 @@ const Role = {
   },
 
   findAll: (callback) => {
-    const query = 'SELECT * FROM Roles';
+    const query = 'SELECT * FROM Roles ORDER BY id ASC';
     db.query(query, callback);
   },
 };

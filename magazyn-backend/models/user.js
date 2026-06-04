@@ -25,13 +25,16 @@ const User = {
   findAllPaginated: (limit, offset, callback) => {
     const query = `
       SELECT SQL_CALC_FOUND_ROWS
-        id,
-        username,
-        role_id,
-        first_name,
-        last_name,
-        email
-      FROM Users
+        u.id,
+        u.username,
+        u.role_id,
+        r.name AS role,
+        u.first_name,
+        u.last_name,
+        u.email
+      FROM Users u
+      LEFT JOIN Roles r ON u.role_id = r.id
+      ORDER BY u.id DESC
       LIMIT ? OFFSET ?
     `;
 
@@ -54,14 +57,16 @@ const User = {
   findById: (id, callback) => {
     const query = `
       SELECT
-        id,
-        username,
-        role_id,
-        first_name,
-        last_name,
-        email
-      FROM Users
-      WHERE id = ?
+        u.id,
+        u.username,
+        u.role_id,
+        r.name AS role,
+        u.first_name,
+        u.last_name,
+        u.email
+      FROM Users u
+      LEFT JOIN Roles r ON u.role_id = r.id
+      WHERE u.id = ?
     `;
 
     db.query(query, [id], callback);

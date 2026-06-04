@@ -31,32 +31,42 @@ const Register = ({
     }));
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccessMessage('');
+const handleRegister = async (e) => {
+  e.preventDefault();
+  setError('');
+  setSuccessMessage('');
 
-    try {
-      const response = await axios.post('/api/users/register', formData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  const token = localStorage.getItem('token');
 
-      if (response.status === 201) {
-        setSuccessMessage(t('common.userRegistered'));
-        setTimeout(() => navigate('/user-management'), 2000);
-      }
-    } catch (err) {
-      if (err.response?.status === 409) {
-        setError(t('common.usernameTaken'));
-      } else if (err.response?.status === 400) {
-        setError(err.response.data.message || t('common.registrationError'));
-      } else {
-        setError(t('common.registrationError'));
-      }
+  if (!token) {
+    setError(t('common.invalidCredentials'));
+    return;
+  }
+
+  try {
+    const response = await axios.post('/api/users/register', formData, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 201) {
+      setSuccessMessage(t('common.userRegistered'));
+      setTimeout(() => navigate('/user-management'), 2000);
     }
-  };
+  } catch (err) {
+    console.error('Registration error:', err.response?.data || err);
+
+    if (err.response?.status === 409) {
+      setError(t('common.usernameTaken'));
+    } else if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else {
+      setError(t('common.registrationError'));
+    }
+  }
+};
 
   return (
     <div className="app-shell">
