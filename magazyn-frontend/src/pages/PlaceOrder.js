@@ -76,28 +76,24 @@ const PlaceOrder = ({
     setSelectedProducts(updatedProducts);
   };
 
-  const handleSubmitOrder = async () => {
-    const token = localStorage.getItem('token');
+if (!dueDate) {
+  alert(t('common.selectDueDate'));
+  return;
+}
 
-    try {
-      await axios.post(
-        '/api/orders',
-        {
-          products: selectedProducts,
-          dueDate,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+if (selectedProducts.length === 0) {
+  alert(t('common.addAtLeastOneProduct'));
+  return;
+}
 
-      toast.success(t('common.orderPlaced'));
-      navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker');
-    } catch (err) {
-      console.error('Error placing order:', err);
-      toast.error(t('common.orderPlaceError'));
-    }
-  };
+const hasInvalidProduct = selectedProducts.some(
+  (product) => !product.productId || !product.quantity || Number(product.quantity) <= 0
+);
+
+if (hasInvalidProduct) {
+  alert(t('common.completeProductData'));
+  return;
+}
 
   return (
     <div className="app-shell">

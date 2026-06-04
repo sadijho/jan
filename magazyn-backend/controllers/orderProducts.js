@@ -30,6 +30,12 @@ exports.getOrderProductsByOrderId = (req, res) => {
 };
 
 exports.getOrderProductsByUserId = (req, res) => {
+
+  const requestedUserId = Number(req.params.userId);
+
+if (req.user.role === 'worker' && req.user.id !== requestedUserId) {
+  return res.status(403).json({ message: 'Nie masz dostępu do zamówień tego użytkownika' });
+}
   const { userId } = req.params;
   const loggedUserId = req.user.id;
   const userRole = req.user.role;

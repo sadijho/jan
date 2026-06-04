@@ -19,6 +19,34 @@ const getInitialOrderStatus = (role) => {
   return ORDER_STATUS.IN_PROGRESS;
 };
 
+const validateOrderPayload = (products, dueDate) => {
+  if (!dueDate) {
+    return 'Termin realizacji jest wymagany';
+  }
+
+  if (!Array.isArray(products) || products.length === 0) {
+    return 'Lista produktów jest wymagana';
+  }
+
+  const hasInvalidProduct = products.some((product) => {
+    const productId = Number(product.productId);
+    const quantity = Number(product.quantity);
+
+    return (
+      !Number.isInteger(productId) ||
+      productId <= 0 ||
+      !Number.isInteger(quantity) ||
+      quantity <= 0
+    );
+  });
+
+  if (hasInvalidProduct) {
+    return 'Każdy produkt musi mieć poprawne ID i ilość większą od zera';
+  }
+
+  return null;
+};
+
 const updateProductsStock = (connection, products, operation, callback) => {
   let index = 0;
 
@@ -29,8 +57,8 @@ const updateProductsStock = (connection, products, operation, callback) => {
     }
 
     const product = products[index];
-    const productId = product.product_id || product.productId;
-    const quantity = parseInt(product.quantity, 10);
+    const productId = Number(product.product_id || product.productId);
+    const quantity = Number(product.quantity);
 
     connection.query(
       'SELECT * FROM Products WHERE id = ? FOR UPDATE',
@@ -80,9 +108,16 @@ exports.createOrder = (req, res) => {
   const userRole = req.user.role;
   const initialStatus = getInitialOrderStatus(userRole);
 
-  if (!products || !Array.isArray(products) || products.length === 0) {
-    return res.status(400).json({ message: 'Lista produktów jest wymagana' });
+  const validationError = validateOrderPayload(products, dueDate);
+
+  if (validationError) {
+    return res.status(400).json({ message: validationError });
   }
+
+  const normalizedProducts = products.map((product) => ({
+    productId: Number(product.productId),
+    quantity: Number(product.quantity),
+  }));
 
   db.getConnection((err, connection) => {
     if (err) {
@@ -113,7 +148,7 @@ exports.createOrder = (req, res) => {
           let index = 0;
 
           const processNextProduct = () => {
-            if (index >= products.length) {
+            if (index >= normalizedProducts.length) {
               if (initialStatus === ORDER_STATUS.PENDING) {
                 return connection.commit((commitErr) => {
                   if (commitErr) {
@@ -133,7 +168,7 @@ exports.createOrder = (req, res) => {
                 });
               }
 
-              return updateProductsStock(connection, products, 'decrease', (stockErr) => {
+              return updateProductsStock(connection, normalizedProducts, 'decrease', (stockErr) => {
                 if (stockErr) {
                   return connection.rollback(() => {
                     connection.release();
@@ -161,8 +196,7 @@ exports.createOrder = (req, res) => {
               });
             }
 
-            const product = products[index];
-            const orderedQuantity = parseInt(product.quantity, 10);
+            const product = normalizedProducts[index];
 
             connection.query(
               'SELECT id FROM Products WHERE id = ?',
@@ -187,7 +221,7 @@ exports.createOrder = (req, res) => {
 
                 connection.query(
                   'INSERT INTO OrderProducts (order_id, product_id, quantity) VALUES (?, ?, ?)',
-                  [orderId, product.productId, orderedQuantity],
+                  [orderId, product.productId, product.quantity],
                   (orderProductErr) => {
                     if (orderProductErr) {
                       return connection.rollback(() => {
