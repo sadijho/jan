@@ -18,6 +18,12 @@ const DashboardTechnical = ({
   const t = (key) => translate(language, key);
   const links = [];
 
+  const formatDateTime = (value) => {
+    if (!value) return '-';
+
+    return new Date(value).toLocaleString();
+  };
+
   const fetchUserData = useCallback(async () => {
     const token = localStorage.getItem('token');
 
@@ -46,7 +52,7 @@ const DashboardTechnical = ({
       setOrders(response.data.results || []);
       setTotalPages(response.data.totalPages || 1);
     } catch (err) {
-      console.error('Error fetching assigned orders:', err);
+      console.error('Error fetching assigned orders:', err.response?.data || err);
       setOrders([]);
     }
   }, [currentPage]);
@@ -92,7 +98,8 @@ const DashboardTechnical = ({
                     <tr>
                       <th>{t('table.orderId')}</th>
                       <th>{t('table.status')}</th>
-                      <th>{t('table.dueDate')}</th>
+                      <th>{t('common.startDate')}</th>
+                      <th>{t('common.endDate')}</th>
                       <th>{t('table.orderedBy')}</th>
                       <th>{t('common.orderNote')}</th>
                       <th>{t('table.actions')}</th>
@@ -104,11 +111,8 @@ const DashboardTechnical = ({
                       <tr key={order.order_id}>
                         <td>{order.order_id}</td>
                         <td>{order.status}</td>
-                        <td>
-                          {order.due_date
-                            ? new Date(order.due_date).toLocaleDateString()
-                            : '-'}
-                        </td>
+                        <td>{formatDateTime(order.start_date || order.due_date)}</td>
+                        <td>{formatDateTime(order.end_date || order.due_date)}</td>
                         <td>
                           {order.first_name} {order.last_name}
                         </td>

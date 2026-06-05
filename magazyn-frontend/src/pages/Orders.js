@@ -22,6 +22,8 @@ const Orders = ({
       orderId: 'ID zamówienia',
       status: 'Status',
       dueDate: 'Termin realizacji',
+      startDate: 'Data rozpoczęcia',
+      endDate: 'Data zakończenia',
       orderedBy: 'Złożone przez',
       products: 'Produkty',
       actions: 'Akcje',
@@ -52,6 +54,8 @@ const Orders = ({
       orderId: 'Order ID',
       status: 'Status',
       dueDate: 'Due date',
+      startDate: 'Start date',
+      endDate: 'End date',
       orderedBy: 'Ordered by',
       products: 'Products',
       actions: 'Actions',
@@ -81,6 +85,18 @@ const Orders = ({
 
   const t = translations[language] || translations.pl;
 
+  const formatDateTime = (value) => {
+    if (!value) return '-';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return '-';
+    }
+
+    return date.toLocaleString();
+  };
+
   const fetchOrders = useCallback(async (page = 1) => {
     const token = localStorage.getItem('token');
 
@@ -100,6 +116,8 @@ const Orders = ({
 
             return {
               ...order,
+              start_date: detailsResponse.data.start_date || order.start_date,
+              end_date: detailsResponse.data.end_date || order.end_date,
               products: detailsResponse.data.products || [],
             };
           } catch (err) {
@@ -327,7 +345,8 @@ const Orders = ({
                     <tr>
                       <th>{t.orderId}</th>
                       <th>{t.status}</th>
-                      <th>{t.dueDate}</th>
+                      <th>{t.startDate}</th>
+                      <th>{t.endDate}</th>
                       <th>{t.orderedBy}</th>
                       <th>{t.products}</th>
                       <th>{t.actions}</th>
@@ -346,9 +365,11 @@ const Orders = ({
                         </td>
 
                         <td>
-                          {order.due_date
-                            ? new Date(order.due_date).toLocaleDateString()
-                            : '-'}
+                          {formatDateTime(order.start_date || order.due_date)}
+                        </td>
+
+                        <td>
+                          {formatDateTime(order.end_date || order.due_date)}
                         </td>
 
                         <td>

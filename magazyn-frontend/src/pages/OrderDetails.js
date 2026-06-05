@@ -17,6 +17,12 @@ const OrderDetails = ({
   const t = (key) => translate(language, key);
   const links = [];
 
+  const formatDateTime = (value) => {
+    if (!value) return '-';
+
+    return new Date(value).toLocaleString();
+  };
+
   const fetchUserData = useCallback(async () => {
     const token = localStorage.getItem('token');
 
@@ -41,7 +47,7 @@ const OrderDetails = ({
 
       setOrder(response.data);
     } catch (err) {
-      console.error('Error fetching order details:', err);
+      console.error('Error fetching order details:', err.response?.data || err);
       setOrder(null);
     }
   }, [orderId]);
@@ -118,12 +124,19 @@ const OrderDetails = ({
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                   <p className="text-sm text-slate-500">
-                    {t('table.dueDate')}
+                    {t('common.startDate')}
                   </p>
                   <p className="font-semibold">
-                    {order.due_date
-                      ? new Date(order.due_date).toLocaleDateString()
-                      : '-'}
+                    {formatDateTime(order.start_date || order.due_date)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <p className="text-sm text-slate-500">
+                    {t('common.endDate')}
+                  </p>
+                  <p className="font-semibold">
+                    {formatDateTime(order.end_date || order.due_date)}
                   </p>
                 </div>
 
@@ -147,7 +160,7 @@ const OrderDetails = ({
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 md:col-span-2">
                   <p className="text-sm text-slate-500">
                     {t('common.orderNote')}
                   </p>
@@ -182,10 +195,10 @@ const OrderDetails = ({
                             <td>
                               {product.location_code
                                 ? `${product.location_code} - ${product.location_description || ''}`
-                                : '-'}
+                                : product.location_id || '-'}
                             </td>
                             <td>
-                              {product.manufacturer_name || '-'}
+                              {product.manufacturer_name || product.manufacturer_id || '-'}
                             </td>
                           </tr>
                         ))}

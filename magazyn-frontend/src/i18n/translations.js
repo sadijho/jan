@@ -119,6 +119,18 @@ details: 'Szczegóły',
 back: 'Wróć',
 location: 'Lokalizacja',
 manufacturer: 'Producent',
+
+startDate: 'Data rozpoczęcia',
+endDate: 'Data zakończenia',
+selectStartDate: 'Wybierz datę rozpoczęcia.',
+selectEndDate: 'Wybierz datę zakończenia.',
+invalidDateRange: 'Data zakończenia musi być późniejsza niż data rozpoczęcia.',
+
+startDate: 'Data rozpoczęcia',
+endDate: 'Data zakończenia',
+selectStartDate: 'Wybierz datę rozpoczęcia.',
+selectEndDate: 'Wybierz datę zakończenia.',
+invalidDateRange: 'Data zakończenia musi być późniejsza niż data rozpoczęcia.',
     },
 
     roles: {
@@ -269,6 +281,18 @@ details: 'Details',
 back: 'Back',
 location: 'Location',
 manufacturer: 'Manufacturer',
+
+startDate: 'Start date',
+endDate: 'End date',
+selectStartDate: 'Select a start date.',
+selectEndDate: 'Select an end date.',
+invalidDateRange: 'The end date must be later than the start date.',
+
+startDate: 'Start date',
+endDate: 'End date',
+selectStartDate: 'Select a start date.',
+selectEndDate: 'Select an end date.',
+invalidDateRange: 'The end date must be later than the start date.',
     },
 
     roles: {

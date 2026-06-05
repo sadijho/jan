@@ -4,8 +4,8 @@ const Order = {
   create: (data, callback) => {
     const query = `
       INSERT INTO Orders
-        (user_id, status, due_date, assigned_technical_user_id, note)
-      VALUES (?, ?, ?, ?, ?)
+        (user_id, status, due_date, start_date, end_date, assigned_technical_user_id, note)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
@@ -13,7 +13,9 @@ const Order = {
       [
         data.userId,
         data.status,
-        data.dueDate,
+        data.dueDate || data.endDate,
+        data.startDate,
+        data.endDate,
         data.assignedTechnicalUserId || null,
         data.note || null,
       ],
@@ -33,6 +35,8 @@ const Order = {
         user_id,
         status,
         due_date,
+        start_date,
+        end_date,
         assigned_technical_user_id,
         note
       FROM Orders

@@ -11,7 +11,16 @@ exports.createOrderSchema = Joi.object({
     .min(1)
     .required(),
 
-  dueDate: Joi.date().required(),
+  dueDate: Joi.date().optional().allow(null, ''),
+
+  startDate: Joi.date().required(),
+
+  endDate: Joi.date()
+    .greater(Joi.ref('startDate'))
+    .required()
+    .messages({
+      'date.greater': 'Data zakończenia musi być późniejsza niż data rozpoczęcia.',
+    }),
 
   assignedTechnicalUserId: Joi.number()
     .integer()

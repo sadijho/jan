@@ -19,9 +19,36 @@ const getInitialOrderStatus = (role) => {
   return ORDER_STATUS.IN_PROGRESS;
 };
 
-const validateOrderPayload = (products, dueDate, assignedTechnicalUserId, note) => {
-  if (!dueDate) {
-    return 'Termin realizacji jest wymagany';
+const completeExpiredOrders = (callback) => {
+  const query = `
+    UPDATE Orders
+    SET status = ?
+    WHERE status = ?
+      AND end_date IS NOT NULL
+      AND end_date < NOW()
+  `;
+
+  db.query(query, [ORDER_STATUS.COMPLETED, ORDER_STATUS.IN_PROGRESS], callback);
+};
+
+const validateOrderPayload = (products, startDate, endDate, assignedTechnicalUserId, note) => {
+  if (!startDate) {
+    return 'Data rozpoczęcia jest wymagana';
+  }
+
+  if (!endDate) {
+    return 'Data zakończenia jest wymagana';
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 'Nieprawidłowy format daty';
+  }
+
+  if (end <= start) {
+    return 'Data zakończenia musi być późniejsza niż data rozpoczęcia';
   }
 
   const technicalUserId = Number(assignedTechnicalUserId);
@@ -134,14 +161,22 @@ const verifyTechnicalWorker = (connection, assignedTechnicalUserId, callback) =>
 };
 
 exports.createOrder = (req, res) => {
-  const { products, dueDate, assignedTechnicalUserId, note } = req.body;
+  const {
+    products,
+    startDate,
+    endDate,
+    assignedTechnicalUserId,
+    note,
+  } = req.body;
+
   const userId = req.user.id;
   const userRole = req.user.role;
   const initialStatus = getInitialOrderStatus(userRole);
 
   const validationError = validateOrderPayload(
     products,
-    dueDate,
+    startDate,
+    endDate,
     assignedTechnicalUserId,
     note
   );
@@ -182,13 +217,15 @@ exports.createOrder = (req, res) => {
         connection.query(
           `
             INSERT INTO Orders
-              (user_id, status, due_date, assigned_technical_user_id, note)
-            VALUES (?, ?, ?, ?, ?)
+              (user_id, status, due_date, start_date, end_date, assigned_technical_user_id, note)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
           `,
           [
             userId,
             initialStatus,
-            dueDate,
+            endDate,
+            startDate,
+            endDate,
             Number(assignedTechnicalUserId),
             normalizedNote,
           ],
@@ -307,58 +344,125 @@ exports.createOrder = (req, res) => {
 };
 
 exports.getOrders = (req, res) => {
-  const userRole = req.user.role;
-  const userId = req.user.id;
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 10;
-  const offset = (page - 1) * limit;
-
-  let query = `
-    SELECT o.id AS order_id,
-           o.status,
-           o.due_date,
-           o.note,
-           o.assigned_technical_user_id,
-           tech.first_name AS technical_first_name,
-           tech.last_name AS technical_last_name,
-           tech.username AS technical_username,
-           u.first_name,
-           u.last_name,
-           u.id AS user_id
-    FROM Orders o
-    JOIN Users u ON o.user_id = u.id
-    LEFT JOIN Users tech ON o.assigned_technical_user_id = tech.id
-  `;
-
-  const queryParams = [];
-
-  if (userRole === 'worker') {
-    query += ' WHERE o.user_id = ?';
-    queryParams.push(userId);
-  }
-
-  query += ' ORDER BY o.id DESC LIMIT ? OFFSET ?';
-  queryParams.push(limit, offset);
-
-  Order.findCustom(query, queryParams, (err, results) => {
-    if (err) {
-      console.error('Błąd podczas pobierania zamówień:', err);
+  completeExpiredOrders((completeErr) => {
+    if (completeErr) {
+      console.error('Błąd automatycznego kończenia zamówień:', completeErr);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
 
-    const countQuery = `
-      SELECT COUNT(*) AS totalCount
+    const userRole = req.user.role;
+    const userId = req.user.id;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    let query = `
+      SELECT o.id AS order_id,
+             o.status,
+             o.due_date,
+             o.start_date,
+             o.end_date,
+             o.note,
+             o.assigned_technical_user_id,
+             tech.first_name AS technical_first_name,
+             tech.last_name AS technical_last_name,
+             tech.username AS technical_username,
+             u.first_name,
+             u.last_name,
+             u.id AS user_id
       FROM Orders o
       JOIN Users u ON o.user_id = u.id
-      ${userRole === 'worker' ? 'WHERE o.user_id = ?' : ''}
+      LEFT JOIN Users tech ON o.assigned_technical_user_id = tech.id
     `;
 
-    Order.findCustom(
-      countQuery,
-      userRole === 'worker' ? [userId] : [],
-      (countErr, countResults) => {
+    const queryParams = [];
+
+    if (userRole === 'worker') {
+      query += ' WHERE o.user_id = ?';
+      queryParams.push(userId);
+    }
+
+    query += ' ORDER BY o.id DESC LIMIT ? OFFSET ?';
+    queryParams.push(limit, offset);
+
+    Order.findCustom(query, queryParams, (err, results) => {
+      if (err) {
+        console.error('Błąd podczas pobierania zamówień:', err);
+        return res.status(500).json({ message: 'Błąd serwera' });
+      }
+
+      const countQuery = `
+        SELECT COUNT(*) AS totalCount
+        FROM Orders o
+        JOIN Users u ON o.user_id = u.id
+        ${userRole === 'worker' ? 'WHERE o.user_id = ?' : ''}
+      `;
+
+      Order.findCustom(
+        countQuery,
+        userRole === 'worker' ? [userId] : [],
+        (countErr, countResults) => {
+          if (countErr) {
+            console.error('Błąd podczas liczenia zamówień:', countErr);
+            return res.status(500).json({ message: 'Błąd serwera' });
+          }
+
+          const totalCount = countResults[0].totalCount;
+          const totalPages = Math.ceil(totalCount / limit);
+
+          res.status(200).json({ results, totalPages, currentPage: page });
+        }
+      );
+    });
+  });
+};
+
+exports.getAssignedTechnicalOrders = (req, res) => {
+  completeExpiredOrders((completeErr) => {
+    if (completeErr) {
+      console.error('Błąd automatycznego kończenia przypisanych zamówień:', completeErr);
+      return res.status(500).json({ message: 'Błąd serwera' });
+    }
+
+    const userId = Number(req.user.id);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    const query = `
+      SELECT o.id AS order_id,
+             o.status,
+             o.due_date,
+             o.start_date,
+             o.end_date,
+             o.note,
+             u.first_name,
+             u.last_name,
+             u.id AS user_id
+      FROM Orders o
+      JOIN Users u ON o.user_id = u.id
+      WHERE o.assigned_technical_user_id = ?
+        AND o.status != ?
+      ORDER BY o.id DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    Order.findCustom(query, [userId, ORDER_STATUS.REJECTED, limit, offset], (err, results) => {
+      if (err) {
+        console.error('Błąd podczas pobierania przypisanych zamówień:', err);
+        return res.status(500).json({ message: 'Błąd serwera' });
+      }
+
+      const countQuery = `
+        SELECT COUNT(*) AS totalCount
+        FROM Orders
+        WHERE assigned_technical_user_id = ?
+          AND status != ?
+      `;
+
+      Order.findCustom(countQuery, [userId, ORDER_STATUS.REJECTED], (countErr, countResults) => {
         if (countErr) {
-          console.error('Błąd podczas liczenia zamówień:', countErr);
+          console.error('Błąd podczas liczenia przypisanych zamówień:', countErr);
           return res.status(500).json({ message: 'Błąd serwera' });
         }
 
@@ -366,141 +470,108 @@ exports.getOrders = (req, res) => {
         const totalPages = Math.ceil(totalCount / limit);
 
         res.status(200).json({ results, totalPages, currentPage: page });
-      }
-    );
-  });
-};
-
-exports.getAssignedTechnicalOrders = (req, res) => {
-  const userId = Number(req.user.id);
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 10;
-  const offset = (page - 1) * limit;
-
-  const query = `
-    SELECT o.id AS order_id,
-           o.status,
-           o.due_date,
-           o.note,
-           u.first_name,
-           u.last_name,
-           u.id AS user_id
-    FROM Orders o
-    JOIN Users u ON o.user_id = u.id
-    WHERE o.assigned_technical_user_id = ?
-      AND o.status != ?
-    ORDER BY o.id DESC
-    LIMIT ? OFFSET ?
-  `;
-
-  Order.findCustom(query, [userId, ORDER_STATUS.REJECTED, limit, offset], (err, results) => {
-    if (err) {
-      console.error('Błąd podczas pobierania przypisanych zamówień:', err);
-      return res.status(500).json({ message: 'Błąd serwera' });
-    }
-
-    const countQuery = `
-      SELECT COUNT(*) AS totalCount
-      FROM Orders
-      WHERE assigned_technical_user_id = ?
-        AND status != ?
-    `;
-
-    Order.findCustom(countQuery, [userId, ORDER_STATUS.REJECTED], (countErr, countResults) => {
-      if (countErr) {
-        console.error('Błąd podczas liczenia przypisanych zamówień:', countErr);
-        return res.status(500).json({ message: 'Błąd serwera' });
-      }
-
-      const totalCount = countResults[0].totalCount;
-      const totalPages = Math.ceil(totalCount / limit);
-
-      res.status(200).json({ results, totalPages, currentPage: page });
+      });
     });
   });
 };
 
 exports.getOrderById = (req, res) => {
-  const { id } = req.params;
-
-  const query = `
-    SELECT o.id AS order_id,
-           o.status,
-           o.due_date,
-           o.note,
-           o.assigned_technical_user_id,
-           tech.first_name AS technical_first_name,
-           tech.last_name AS technical_last_name,
-           tech.username AS technical_username,
-           u.first_name,
-           u.last_name,
-           u.id AS user_id
-    FROM Orders o
-    JOIN Users u ON o.user_id = u.id
-    LEFT JOIN Users tech ON o.assigned_technical_user_id = tech.id
-    WHERE o.id = ?
-  `;
-
-  Order.findCustom(query, [id], (err, orderResults) => {
-    if (err) {
-      console.error('Błąd podczas pobierania zamówienia:', err);
+  completeExpiredOrders((completeErr) => {
+    if (completeErr) {
+      console.error('Błąd automatycznego kończenia zamówień przed szczegółami:', completeErr);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
 
-    if (orderResults.length === 0) {
-      return res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
-    }
+    const { id } = req.params;
 
-    const order = orderResults[0];
-
-    if (req.user.role === 'worker' && Number(order.user_id) !== Number(req.user.id)) {
-      return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
-    }
-
-    if (
-      req.user.role === 'technical worker' &&
-      Number(order.assigned_technical_user_id) !== Number(req.user.id)
-    ) {
-      return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
-    }
-
-    const productsQuery = `
-      SELECT op.product_id,
-             op.quantity,
-             p.name AS product_name,
-             p.description AS product_description,
-             p.location_id,
-             p.manufacturer_id
-      FROM OrderProducts op
-      JOIN Products p ON op.product_id = p.id
-      WHERE op.order_id = ?
+    const query = `
+      SELECT o.id AS order_id,
+             o.status,
+             o.due_date,
+             o.start_date,
+             o.end_date,
+             o.note,
+             o.assigned_technical_user_id,
+             tech.first_name AS technical_first_name,
+             tech.last_name AS technical_last_name,
+             tech.username AS technical_username,
+             u.first_name,
+             u.last_name,
+             u.id AS user_id
+      FROM Orders o
+      JOIN Users u ON o.user_id = u.id
+      LEFT JOIN Users tech ON o.assigned_technical_user_id = tech.id
+      WHERE o.id = ?
     `;
 
-    Order.findCustom(productsQuery, [id], (productsErr, products) => {
-      if (productsErr) {
-        console.error('Błąd podczas pobierania produktów zamówienia:', productsErr);
+    Order.findCustom(query, [id], (err, orderResults) => {
+      if (err) {
+        console.error('Błąd podczas pobierania zamówienia:', err);
         return res.status(500).json({ message: 'Błąd serwera' });
       }
 
-      res.status(200).json({ ...order, products });
+      if (orderResults.length === 0) {
+        return res.status(404).json({ message: 'Zamówienie nie zostało znalezione' });
+      }
+
+      const order = orderResults[0];
+
+      if (req.user.role === 'worker' && Number(order.user_id) !== Number(req.user.id)) {
+        return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
+      }
+
+      if (
+        req.user.role === 'technical worker' &&
+        Number(order.assigned_technical_user_id) !== Number(req.user.id)
+      ) {
+        return res.status(403).json({ message: 'Nie masz dostępu do tego zamówienia' });
+      }
+
+      const productsQuery = `
+        SELECT op.product_id,
+               op.quantity,
+               p.name AS product_name,
+               p.description AS product_description,
+               p.location_id,
+               p.manufacturer_id
+        FROM OrderProducts op
+        JOIN Products p ON op.product_id = p.id
+        WHERE op.order_id = ?
+      `;
+
+      Order.findCustom(productsQuery, [id], (productsErr, products) => {
+        if (productsErr) {
+          console.error('Błąd podczas pobierania produktów zamówienia:', productsErr);
+          return res.status(500).json({ message: 'Błąd serwera' });
+        }
+
+        res.status(200).json({ ...order, products });
+      });
     });
   });
 };
 
 exports.getPendingOrdersCount = (req, res) => {
-  const query = `
-    SELECT COUNT(*) AS count
-    FROM Orders
-    WHERE status = ?
-  `;
-
-  Order.findCustom(query, [ORDER_STATUS.PENDING], (err, results) => {
-    if (err) {
-      console.error('Błąd podczas pobierania liczby oczekujących zamówień:', err);
+  completeExpiredOrders((completeErr) => {
+    if (completeErr) {
+      console.error('Błąd automatycznego kończenia zamówień przy liczniku:', completeErr);
       return res.status(500).json({ message: 'Błąd serwera' });
     }
 
-    res.status(200).json({ count: results[0].count || 0 });
+    const query = `
+      SELECT COUNT(*) AS count
+      FROM Orders
+      WHERE status = ?
+    `;
+
+    Order.findCustom(query, [ORDER_STATUS.PENDING], (err, results) => {
+      if (err) {
+        console.error('Błąd podczas pobierania liczby oczekujących zamówień:', err);
+        return res.status(500).json({ message: 'Błąd serwera' });
+      }
+
+      res.status(200).json({ count: results[0].count || 0 });
+    });
   });
 };
 

@@ -14,7 +14,8 @@ const PlaceOrder = ({
   const [products, setProducts] = useState([]);
   const [technicalWorkers, setTechnicalWorkers] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [dueDate, setDueDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [assignedTechnicalUserId, setAssignedTechnicalUserId] = useState('');
   const [note, setNote] = useState('');
   const [userRole, setUserRole] = useState('');
@@ -92,8 +93,18 @@ const PlaceOrder = ({
   };
 
   const handleSubmitOrder = async () => {
-    if (!dueDate) {
-      toast.error(t('common.selectDueDate'));
+    if (!startDate) {
+      toast.error(t('common.selectStartDate'));
+      return;
+    }
+
+    if (!endDate) {
+      toast.error(t('common.selectEndDate'));
+      return;
+    }
+
+    if (new Date(endDate) <= new Date(startDate)) {
+      toast.error(t('common.invalidDateRange'));
       return;
     }
 
@@ -131,7 +142,8 @@ const PlaceOrder = ({
         '/api/orders',
         {
           products: selectedProducts,
-          dueDate,
+          startDate,
+          endDate,
           assignedTechnicalUserId,
           note,
         },
@@ -173,6 +185,7 @@ const PlaceOrder = ({
             </div>
 
             <button
+              type="button"
               onClick={handleAddProduct}
               className="btn-primary"
             >
@@ -232,6 +245,7 @@ const PlaceOrder = ({
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => handleRemoveProduct(index)}
                       className="btn-danger"
                       aria-label={t('common.remove')}
@@ -248,17 +262,32 @@ const PlaceOrder = ({
             )}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-            <label className="form-label">
-              {t('common.dueDate')}
-            </label>
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <label className="form-label">
+                {t('common.startDate')}
+              </label>
 
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="form-input"
-            />
+              <input
+                type="datetime-local"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <label className="form-label">
+                {t('common.endDate')}
+              </label>
+
+              <input
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="form-input"
+              />
+            </div>
           </div>
 
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
@@ -306,6 +335,7 @@ const PlaceOrder = ({
 
           <div className="mt-6 flex justify-end gap-3">
             <button
+              type="button"
               onClick={() =>
                 navigate(userRole === 'managing director' ? '/dashboard-md' : '/dashboard-worker')
               }
@@ -315,6 +345,7 @@ const PlaceOrder = ({
             </button>
 
             <button
+              type="button"
               onClick={handleSubmitOrder}
               className="btn-success"
             >
